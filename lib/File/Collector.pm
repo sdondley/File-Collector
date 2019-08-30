@@ -77,9 +77,9 @@ sub obj_meth {
 }
 
 sub short_name {
-  my $s = shift;
+  my $s    = shift;
   my $file = shift;
-  $s->{files}{$file}{short_path};
+  $s->{files}{all}{$file}{short_path};
 }
 
 sub get_obj {
@@ -148,9 +148,9 @@ sub set_obj_prop {
 }
 
 sub add_obj {
-  my ($s, $type, $obj)     = @_;
+  my ($s, $type, $file, $obj)     = @_;
   my $ot                   = "${type}_obj";
-  #$s->{files}{$type}{$file}{$ot} = $obj;
+  $s->{files}{all}{$file}{$ot} = $obj;
 }
 
 sub has_obj {
@@ -265,10 +265,7 @@ sub _classify_files {
 }
 
 sub add_to_iterator {
-  my $s    = shift;
-  my $type = shift;
-  my $file = shift;
-
+  my ($s, $type, $file, $objects) = @_;
   $s->{files}{$type}->add_file($s->{files}{all}{$file});
 }
 
