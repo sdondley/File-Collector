@@ -11,46 +11,47 @@ sub AUTOLOAD {
   my $s = shift;
   $AUTOLOAD  =~ /.*::(\w+)$/ or
     croak "No such method: $AUTOLOAD";
-  my $type = $1;
 
-  if (!$s->{files}{$type}) {
-    croak 'No such files exist';
-  }
-  return $s->{files}{$type};
+  if (!$s->{files}{$1}) { croak 'No such file category exists: ' . $1; }
+  else { return $s->{files}{$1}; }
 }
 
 sub new {
   my $class = shift;
 
-  my $s = bless {
-    files          => {},
-    common_dir     => '',
-  }, $class;
-
   # Check args
   if (!@_ || (@_ == 1 && ref($_[0]) eq 'HASH')) {
-    croak ('No list of files or directories supplied to constructor. Aborting.')
+    croak ('No list of files or directories supplied to constructor. Aborting.');
   }
 
   my @tmp = @_;
   pop @tmp;
   for my $r (@tmp) {
-    croak ('Option hash should be passed to constructor last') if (ref($r)) eq 'HASH';
+    croak ('Option hash should be passed to constructor last. Aborting')
+      if (ref($r)) eq 'HASH';
   }
 
   # get options hash
-  my $opts = {};
+  my $user_opts    = {};
+  my $default_opts = { recurse => 1 };
   if (ref $_[-1] eq 'HASH') {
-    $opts = pop @_;
+    $user_opts    = pop @_;
   }
+  my %opts = (%$default_opts, %$user_opts);
 
-  $s->add_resources($opts, @_);
+  my $s = bless {
+    files          => {},
+    common_dir     => '',
+    options        => \%opts,
+  }, $class;
+
+  $s->add_resources(@_);
   return $s;
 }
 
 sub get_count {
   my $s = shift;
-  return (scalar keys %{$s->{files}})
+  return (scalar keys %{$s->{files}{all}})
 }
 
 sub obj_meth {
@@ -148,9 +149,8 @@ sub set_obj_prop {
 
 sub add_obj {
   my ($s, $type, $obj)     = @_;
-  my $file                 = $s->selected_file;
   my $ot                   = "${type}_obj";
-  $s->{files}{$file}{$ot} = $obj;
+  #$s->{files}{$type}{$file}{$ot} = $obj;
 }
 
 sub has_obj {
@@ -174,12 +174,12 @@ sub get_files {
 }
 
 sub add_resources {
-  my ($s, $opts, @resources) = @_;
+  my ($s, @resources) = @_;
 
   foreach my $resource (@resources) {
     _exists($resource);
-    $s->_add_file($resource, $opts)          if -f $resource;
-    $s->_get_file_manifest($resource, $opts) if -d $resource;
+    $s->_add_file($resource)          if -f $resource;
+    $s->_get_file_manifest($resource) if -d $resource;
   }
 
   $s->_generate_short_names;
@@ -262,9 +262,7 @@ sub _make_absolute {
 }
 
 sub _get_file_manifest {
-  my ($s, $dir, $opts) = @_;
-
-  my $recurse = $opts->{recurse} // 1;
+  my ($s, $dir) = @_;
 
   opendir (my $dh, $dir) or die "Can't opendir $dir: $!";
   my @dirs_and_files = grep { /^[^\.]/ } readdir($dh);
@@ -272,7 +270,7 @@ sub _get_file_manifest {
   my @files = grep { -f "$dir/$_" } @dirs_and_files;
   $s->_add_file("$dir/$_") for @files;
 
-  my @dirs  = grep { -d "$dir/$_" } @dirs_and_files if $recurse;
+  my @dirs  = grep { -d "$dir/$_" } @dirs_and_files if $s->{options}{recurse};
   foreach my $tdir (@dirs) {
     opendir (my $tdh, "$dir/$tdir") || die "Can't opendir $tdir: $!";
     $s->_get_file_manifest("$dir/$tdir");
