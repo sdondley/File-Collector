@@ -9,9 +9,7 @@ sub _classify_files {
   my ($s, $files_added) = @_;
 
   $s->add_iterators( qw ( some_files other_files ) );
-  foreach my $file (sort @$files_added) {
-    $s->add_to_iterator('some_files', $file);
-  }
+  $s->add_to_iterator('some_files', $_) for sort @$files_added;
 }
 
 return 1;
