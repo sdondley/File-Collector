@@ -32,12 +32,6 @@ plan tests => $tests;
    'prints first file with no double line break';
 }
 
-
-
-
-
-
-
 my $t1 = Benchmark->new;
 my $td = timediff($t1, $t0);
 print "\nThe code took:",timestr($td),"\n";
