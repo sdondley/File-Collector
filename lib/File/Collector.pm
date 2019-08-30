@@ -1,89 +1,303 @@
 package File::Collector ;
+use strict; use warnings;
 
-use Moose;
-use namespace::autoclean;
-#use Moose::Role;
-#with qw( );
+use Cwd;
+use Carp                           qw( croak cluck );
+use File::Basename;
+use File::Collector::Iterator;
+use File::Collector::Bundle;
+use Log::Log4perl::Shortcuts       qw(:all);
 
-has '' => (is => '___', isa => '___', required => ___, lazy => ___, default => sub { ___ } );
-has '' => (is => '___', isa => '___', required => ___, lazy => ___, default => sub { ___ } );
+sub AUTOLOAD {
+  my $s = shift;
+  our $AUTOLOAD;
+  $AUTOLOAD  =~ /.*::(get|next|bundle)_(\w+)*files*$/ or
+    croak "No such method: $AUTOLOAD";
+  my ($mode, $type) = ($1, $2 || '');
 
-# methods here
+  # return the requested list of files
+  if ($mode ne 'next') {
+    my @files = map {  $s->{files}->{$_} }
+      $type ? @{$s->{"${type}files"}} : $s->get_files;
+    return @files if $mode eq 'get';
+    my $class = ref($s) . '::Iterator';
+    return $class->new($s, @files);
+  }
 
-sub BUILD {
+  my @files = $type ? @{$s->{"${type}_files"}} : $s->get_files;
+  my $class = ref($s) . '::Iterator';
+  return $class->new(@files);
+}
+
+sub new {
+  my $class = shift;
+
+  my $s = bless {
+    files          => {},
+    common_dir     => '',
+#    last_req_stack => [],
+#    iterator_stack => [],
+#    iterator       => undef,
+  }, $class;
+
+  # Check args
+  if (!@_ || (@_ == 1 && ref($_[0]) eq 'HASH')) {
+    croak ('No list of files or directories supplied to constructor. Aborting.')
+  }
+
+  my @tmp = @_;
+  pop @tmp;
+  for my $r (@tmp) {
+    croak ('Option hash should be passed to constructor last') if (ref($r)) eq 'HASH';
+  }
+
+  # get options hash
+  my $opts = {};
+  if (ref $_[-1] eq 'HASH') {
+    $opts = pop @_;
+  }
+
+  $s->add_resources($opts, @_);
+  return $s;
+}
+
+sub get_count {
+  my $s = shift;
+  return (scalar keys %{$s->{files}})
+}
+
+sub obj_meth {
+  my $s    = shift;
+  my $obj  = shift;
+  my $meth = shift;
+  my $file = shift || $s->selected_file;
+
+  if (!$obj || !$meth) {
+    $s->_croak ("Missing arguments to obj_meth method"
+      . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
+  }
+
+  my $o    = $obj . '_obj';
+  $obj     = $s->{files}{$file}{$o};
+  $meth    = "$meth";
+
+  if (! $obj->can($meth)) {
+    $s->croak ("Non-existent method on $obj object: '$meth'"
+      . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
+  }
+  return $obj->$meth($s->short_name, @_);
+}
+
+sub get_obj {
+  my $s = shift;
+  my $obj = shift;
+
+  if (!$obj) {
+    $s->_croak ("Missing arguments to get_obj method"
+      . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
+  }
+
+  my $file = $s->{_iterator}->selected_file;
+  my $o = $obj . '_obj';
+  return $s->{files}{$file}{$o};
 
 }
 
-### Public methods ###
+sub get_obj_prop {
+  my $s    = shift;
+  my $obj  = shift;
+  my $prop = shift;
+  my $file = shift || $s->selected_file;
 
-sub  {
-  ___
+  if (!$prop || !$obj || !$file) {
+    $s->_croak ("Missing arguments to get_obj_prop method"
+      . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
+  }
+
+  my $o = $obj . '_obj';
+  my $object = $s->{files}{$file}{$o};
+  my $attr = "_$prop";
+  if (! exists $object->{$attr} ) {
+    $s->croak ("Non-existent $obj object attribute requested: '$prop'"
+      . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
+  }
+  my $value = $object->{$attr};
+  if (ref $value eq 'ARRAY') {
+    return @$value;
+  } else {
+    return $value;
+  }
 }
 
-### Private methods ###
+sub set_obj_prop {
+  my $s = shift;
+  my $obj  = shift;
+  my $prop = shift;
+  my $val  = shift;
 
-sub  {
-  ___
+  if (!$prop || !$obj) {
+    $s->croak ("Missing arguments to get_obj_prop method"
+      . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
+  }
+
+  my $file = $s->selected_file;
+
+  my $o = $obj . '_obj';
+  my $object = $s->{files}{$file}{$o};
+  my $attr = "_$prop";
+  if (! exists $object->{$attr} ) {
+    $s->croak ("Non-existent $obj object attribute requested: '$prop'"
+      . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
+  }
+
+  $object->{$attr} = $val;
 }
 
+sub add_obj {
+  my ($s, $type, $obj)     = @_;
+  my $file                 = $s->selected_file;
+  my $ot                   = "${type}_obj";
+  $s->{files}{$file}{$ot} = $obj;
+}
 
-__PACKAGE__->meta->make_immutable;
+sub has_obj {
+  my $s = shift;
+  my $type = shift;
+
+  if (!$type) {
+    $s->croak ("Missing argument to has method"
+      . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
+  }
+  my $file = shift || $s->selected_file;
+  my $to = "${type}_obj";
+  return defined $s->{files}{$file}{$to};
+}
+
+sub get_files {
+  my $s = shift;
+
+  my @files = sort keys %{$s->{files}};
+  return @files;
+}
+
+sub add_resources {
+  my ($s, $opts, @resources) = @_;
+
+  foreach my $resource (@resources) {
+    _exists($resource);
+    $s->_add_file($resource, $opts)          if -f $resource;
+    $s->_get_file_manifest($resource, $opts) if -d $resource;
+  }
+
+  $s->_generate_short_names;
+}
+
+sub list_files_long {
+  my $s = shift;
+
+  my @files = $s->get_files;
+  print $_ . "\n" for @files;
+}
+
+sub list_files {
+  my $s = shift;
+
+  my @files = map { $s->{files}{$_}{short_path} } sort keys %{$s->{files}};
+  print "\nFiles found in '".$s->{common_dir}."':\n\n";
+  print $_ . "\n" for @files;
+}
+
+sub print_short_name {
+  my $s = shift;
+  print $s->short_name . "\n";
+}
+
+sub _generate_short_names {
+  my $s = shift;
+
+  my @files                         = $s->get_files;
+  my $file                          = pop @files;
+  my @comps                         = split /\//, $file;
+  my ($new_string, $longest_string) = '';
+  foreach my $cfile (@files) {
+    my @ccomps = split /\//, $cfile;
+    my $lc     = 0;
+
+    foreach my $comp (@ccomps) {
+      if (defined $comps[$lc] && $ccomps[$lc] eq $comps[$lc]) {
+        $new_string   .= $ccomps[$lc++] . '/';
+        next;
+      }
+      $longest_string = $new_string;
+      @comps          = split /\//, $new_string;
+      $new_string     = '';
+      last;
+    }
+  }
+
+  $s->{common_dir} = $longest_string || (fileparse($file))[1];
+
+  if (@files) {
+    foreach my $file ( @files, $file ) {
+      $s->{files}{$file}{short_path} = $file =~ s/$longest_string//r;
+    }
+  } else {
+    $s->{files}{$file}{short_path} = $file;
+  }
+}
+
+sub get_filename {
+  my $s = shift;
+  my $file = $s->selected_file || shift;
+
+  return $s->{files}{$file}{filename};
+}
+
+sub _add_file {
+  my ($s, $file) = @_;
+
+  $file = $s->_make_absolute($file);
+  $s->{files}{$file}{full_path} = $file;
+  my $filename = (fileparse($file))[0];
+  $s->{files}{$file}{filename} = $filename;
+}
+
+sub _make_absolute {
+  my ($s, $file) = @_;
+
+  return $file =~ /^\// ? $file : cwd() . "/$file";
+}
+
+sub _get_file_manifest {
+  my ($s, $dir, $opts) = @_;
+
+  my $recurse = $opts->{recurse} // 1;
+
+  opendir (my $dh, $dir) or die "Can't opendir $dir: $!";
+  my @dirs_and_files = grep { /^[^\.]/ } readdir($dh);
+
+  my @files = grep { -f "$dir/$_" } @dirs_and_files;
+  $s->_add_file("$dir/$_") for @files;
+
+  my @dirs  = grep { -d "$dir/$_" } @dirs_and_files if $recurse;
+  foreach my $tdir (@dirs) {
+    opendir (my $tdh, "$dir/$tdir") || die "Can't opendir $tdir: $!";
+    $s->_get_file_manifest("$dir/$tdir");
+  }
+
+}
+
+sub _exists {
+  _croak("'$_[0]' does not exist, aborting call from: ") if ! -e $_[0];
+}
+
+sub _croak {
+  my $msg = shift;
+  croak($msg . (fileparse((caller(1))[1]))[0] . ', line ' . (caller(1))[2] . "\n");
+}
+
+sub DESTROY {
+}
+
 1; # Magic true value
 # ABSTRACT: this is what the module does
-
-__END__
-
-=head1 OVERVIEW
-
-Provide overview of who the intended audience is for the module and why it's useful.
-
-=head1 SYNOPSIS
-
-  use File::Collector;
-
-=head1 DESCRIPTION
-
-=method method1()
-
-
-
-=method method2()
-
-
-
-=func function1()
-
-
-
-=func function2()
-
-
-
-=attr attribute1
-
-
-
-=attr attribute2
-
-
-
-#=head1 CONFIGURATION AND ENVIRONMENT
-#
-#File::Collector requires no configuration files or environment variables.
-
-
-=head1 DEPENDENCIES
-
-=head1 AUTHOR NOTES
-
-=head2 Development status
-
-This module is currently in the beta stages and is actively supported and maintained. Suggestion for improvement are welcome. 
-
-- Note possible future roadmap items.
-
-=head2 Motivation
-
-Provide motivation for writing the module here.
-
-#=head1 SEE ALSO

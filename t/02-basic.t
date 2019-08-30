@@ -2,10 +2,10 @@ use Test::Most;
 use Test::NoWarnings;
 use Log::Log4perl::Shortcuts qw(:all);
 BEGIN {
-  use Test::File::ShareDir::Module { "File::Collector" => "share/" };
-  use Test::File::ShareDir::Dist { "File-Collector" => "share/" };
+  use Test::File::ShareDir::Module { "Dondley::WestfieldVote" => "share/" };
+  use Test::File::ShareDir::Dist { "Dondley-WestfieldVote" => "share/" };
 }
-use File::Collector;
+use Dondley::WestfieldVote;
 
 
 
