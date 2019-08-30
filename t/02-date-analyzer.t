@@ -14,7 +14,7 @@ $t0 = Benchmark->new;
 
 
 
-my $tests = 1; # keep on line 17 for ,i (increment and ,ii (decrement)
+my $tests = 3; # keep on line 17 for ,i (increment and ,ii (decrement)
 plan tests => $tests;
 
 # 1 - 7
@@ -25,11 +25,11 @@ plan tests => $tests;
  lives_ok { $da = File::Collector::DateAnalyzer->new('t/test_data/many_files'); }
    'creates DateAnalyzer object';
 
-# logd $da->{files};
+ stdout_like { $da->some_files->do->print_blah_names } qr/^dir1\/file4$/ms,
+   'prints first file';
 
- $da->{files}{some_files}->do->print_blah_names;
- $da->{files}{some_files}->do->print_short_names;
- $da->some_files->do->print_blah_names;
+ stdout_like { $da->some_files->do->print_short_names } qr/^dir1\/file4\ndir1/,
+   'prints first file with no double line break';
 }
 
 
