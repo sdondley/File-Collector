@@ -198,7 +198,7 @@ sub list_files_long {
 sub list_files {
   my $s = shift;
 
-  my @files = map { $s->{files}{$_}{short_path} } sort keys %{$s->{files}};
+  my @files = map { $s->{files}{all}{$_}{short_path} } sort keys %{$s->{files}{all}};
   print "\nFiles found in '".$s->{common_dir}."':\n\n";
   print $_ . "\n" for @files;
 }
@@ -255,9 +255,13 @@ sub add_iterators {
 
   my $it_class = ref($s) . '::Iterator';
   foreach my $it ( @iterators ) {
+    next if $s->{files}{$it};            # don't overwrite existing iterator
     $s->{files}{$it} = $it_class->new();
   }
+}
 
+sub _classify_files {
+  return @_;
 }
 
 sub add_to_iterator {

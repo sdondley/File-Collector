@@ -8,6 +8,7 @@ use parent qw ( File::Collector );
 sub _classify_files {
   my ($s, $files_added) = @_;
 
+  $s->SUPER::_classify_files(@_);
   $s->add_iterators( qw ( some_files other_files ) );
   $s->add_to_iterator('some_files', $_) for sort @$files_added;
 }
