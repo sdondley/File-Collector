@@ -1,4 +1,4 @@
-package File::Collector::DateAnalyzer::Iterator ;
+package File::Collector::DateClassifier::Iterator ;
 use strict;
 use warnings;
 
