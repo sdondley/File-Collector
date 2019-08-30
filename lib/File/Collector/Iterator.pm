@@ -5,33 +5,35 @@ use warnings;
 use Carp;
 use Log::Log4perl::Shortcuts       qw(:all);
 
-{
-	my $collector;
-	sub collector {
-	    shift;
-	    $collector = shift if @_;
-	    return $collector;
-	}
-}
-
 sub new {
   my $class = shift;
-  $class->collector(shift);
   bless [@_], $class;
 }
 
 sub next {
-  return shift @{(shift)};
+  my $s = shift;
+  my $last = shift @$s;
+  push @$s, $last;
+  return  $last;
+}
+
+sub add_file {
+  my $s = shift;
+  my $file = shift;
+  pop @$s;         # remove the trailing blank element
+  push @$s, $file; # add the new file to the queue
+  push @$s, '';    # replace the trailing blank element
 }
 
 sub print_short_names {
   my $s = shift;
-  print short_name($s->next) . "\n";
+  print $s->next->{short_path} . "\n";
 }
 
-sub selected_file { (shift)->[0]->{full_path} }
-
-sub short_name { (shift)->{short_path} }
+sub selected_file {
+  my $s = shift;
+  $s->[0]->{full_path} if $s->[0];
+}
 
 sub do {
   my $self = shift;
@@ -47,6 +49,7 @@ sub do {
     my @method = split /::/, $AUTOLOAD;
     my $method = pop @method;
     $$self->$method(@_) while ($$self->selected_file);
+    $$self->next(@_);  # resets the queue
   }
 }
 

@@ -25,7 +25,11 @@ plan tests => $tests;
  lives_ok { $da = File::Collector::DateAnalyzer->new('t/test_data/many_files'); }
    'creates DateAnalyzer object';
 
- $da->bundle_txt_files->do->print_short_names;
+# logd $da->{files};
+
+ $da->{files}{some_files}->do->print_blah_names;
+ $da->{files}{some_files}->do->print_short_names;
+ $da->some_files->do->print_blah_names;
 }
 
 

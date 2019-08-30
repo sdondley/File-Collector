@@ -4,29 +4,19 @@ use strict; use warnings;
 use Cwd;
 use Carp                           qw( croak cluck );
 use File::Basename;
-use File::Collector::Iterator;
-use File::Collector::Bundle;
 use Log::Log4perl::Shortcuts       qw(:all);
 
 sub AUTOLOAD {
-  my $s = shift;
   our $AUTOLOAD;
-  $AUTOLOAD  =~ /.*::(get|next|bundle)_(\w+)*files*$/ or
+  my $s = shift;
+  $AUTOLOAD  =~ /.*::(\w+)$/ or
     croak "No such method: $AUTOLOAD";
-  my ($mode, $type) = ($1, $2 || '');
+  my $type = $1;
 
-  # return the requested list of files
-  if ($mode ne 'next') {
-    my @files = map {  $s->{files}->{$_} }
-      $type ? @{$s->{"${type}files"}} : $s->get_files;
-    return @files if $mode eq 'get';
-    my $class = ref($s) . '::Iterator';
-    return $class->new($s, @files);
+  if (!$s->{files}{$type}) {
+    croak 'No such files exist';
   }
-
-  my @files = $type ? @{$s->{"${type}_files"}} : $s->get_files;
-  my $class = ref($s) . '::Iterator';
-  return $class->new(@files);
+  return $s->{files}{$type};
 }
 
 sub new {
@@ -35,9 +25,6 @@ sub new {
   my $s = bless {
     files          => {},
     common_dir     => '',
-#    last_req_stack => [],
-#    iterator_stack => [],
-#    iterator       => undef,
   }, $class;
 
   # Check args
@@ -86,6 +73,12 @@ sub obj_meth {
       . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
   }
   return $obj->$meth($s->short_name, @_);
+}
+
+sub short_name {
+  my $s = shift;
+  my $file = shift;
+  $s->{files}{$file}{short_path};
 }
 
 sub get_obj {
@@ -176,7 +169,7 @@ sub has_obj {
 sub get_files {
   my $s = shift;
 
-  my @files = sort keys %{$s->{files}};
+  my @files = sort keys %{$s->{files}{all}};
   return @files;
 }
 
@@ -239,10 +232,10 @@ sub _generate_short_names {
 
   if (@files) {
     foreach my $file ( @files, $file ) {
-      $s->{files}{$file}{short_path} = $file =~ s/$longest_string//r;
+      $s->{files}{all}{$file}{short_path} = $file =~ s/$longest_string//r;
     }
   } else {
-    $s->{files}{$file}{short_path} = $file;
+    $s->{files}{all}{$file}{short_path} = $file;
   }
 }
 
@@ -257,9 +250,9 @@ sub _add_file {
   my ($s, $file) = @_;
 
   $file = $s->_make_absolute($file);
-  $s->{files}{$file}{full_path} = $file;
+  $s->{files}{all}{$file}{full_path} = $file;
   my $filename = (fileparse($file))[0];
-  $s->{files}{$file}{filename} = $filename;
+  $s->{files}{all}{$file}{filename} = $filename;
 }
 
 sub _make_absolute {

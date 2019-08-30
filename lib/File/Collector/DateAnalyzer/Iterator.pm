@@ -2,9 +2,18 @@ package File::Collector::DateAnalyzer::Iterator ;
 use strict;
 use warnings;
 
-use parent 'File::Collector::Iterator';
+use parent qw (File::Collector::Iterator);
 use Log::Log4perl::Shortcuts       qw(:all);
 
+sub print_blah_names {
+  my $s = shift;
+  print $s->next->{short_path} . "\n\n";
+}
+
+sub DESTROY {
+  my $s = shift;
+  $s->next;
+}
 
 1; # Magic true value
 # ABSTRACT: this is what the module does
