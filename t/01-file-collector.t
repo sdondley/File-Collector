@@ -27,7 +27,7 @@ plan tests => $tests;
 
   # 2
   lives_ok { $fc = File::Collector->new('t/test_data/single_file'); }
-    'creates and object';
+    'creates an object';
 
   # 3
   ok $fc->{files},
@@ -90,24 +90,6 @@ plan tests => $tests;
   stdout_like { $fc->list_files } qr/dir1\/file4/,
     'Prints proper list of files found';
 
-#  while ($fc->next_file->next) {
-#
-#  }
-#  my $b = $fc->bundle_files;
-#  logd $b;
-
-  my $b = $fc->bundle_files;
-  $b->all->blah;
-
-#  while($fc->next_file) {
-    #    print $fc->short_name . "\n";
-#  }
-
-#  while ($fc->next_file) {
-#  }
-#  foreach my $file ($fc->get_files) {
-#    print $fc->short_name($file) . "\n";
-#  }
 }
 
 
