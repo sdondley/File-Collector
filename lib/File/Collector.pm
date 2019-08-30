@@ -176,13 +176,16 @@ sub get_files {
 sub add_resources {
   my ($s, @resources) = @_;
 
+  # collect the files
   foreach my $resource (@resources) {
     _exists($resource);
     $s->_add_file($resource)          if -f $resource;
     $s->_get_file_manifest($resource) if -d $resource;
   }
 
-  $s->_generate_short_names;
+  $s->_generate_short_names;                    # calculate the short names
+  $s->_classify_files($s->{files}{new_files});  # for subclass processing
+  undef $s->{files}{new_files};                 # clear the new_file array
 }
 
 sub list_files_long {
@@ -257,11 +260,20 @@ sub add_iterators {
 
 }
 
+sub add_to_iterator {
+  my $s    = shift;
+  my $type = shift;
+  my $file = shift;
+
+  $s->{files}{$type}->add_file($s->{files}{all}{$file});
+}
+
 sub _add_file {
   my ($s, $file) = @_;
 
   $file = $s->_make_absolute($file);
   $s->{files}{all}{$file}{full_path} = $file;
+  push @{$s->{files}{new_files}}, $file;
   my $filename = (fileparse($file))[0];
   $s->{files}{all}{$file}{filename} = $filename;
 }

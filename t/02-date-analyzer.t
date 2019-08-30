@@ -2,7 +2,7 @@
 use Test::Most;
 use Test::Output;
 use Log::Log4perl::Shortcuts qw(:all);
-use File::Collector::DateAnalyzer;
+use File::Collector::DateClassifier;
 diag( "Running my tests" );
 
 my $t0;
