@@ -246,6 +246,17 @@ sub get_filename {
   return $s->{files}{$file}{filename};
 }
 
+sub add_iterators {
+  my $s = shift;
+  my @iterators = @_;
+
+  my $it_class = ref($s) . '::Iterator';
+  foreach my $it ( @iterators ) {
+    $s->{files}{$it} = $it_class->new();
+  }
+
+}
+
 sub _add_file {
   my ($s, $file) = @_;
 
