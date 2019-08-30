@@ -22,7 +22,7 @@ plan tests => $tests;
   my $da;
 
   # 1
- lives_ok { $da = File::Collector::DateAnalyzer->new('t/test_data/many_files'); }
+ lives_ok { $da = File::Collector::DateClassifier->new('t/test_data/many_files'); }
    'creates DateAnalyzer object';
 
  stdout_like { $da->some_files->do->print_blah_names } qr/^dir1\/file4$/ms,
