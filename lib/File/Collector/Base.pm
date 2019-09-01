@@ -53,6 +53,32 @@ sub get_obj {
   return $s->{all}{$file}{$o};
 }
 
+sub set_obj_prop {
+  my ($s, $obj, $prop, $val)  = @_;
+
+  if (!$prop || !$obj) {
+    $s->_scroak ("Missing arguments to set_obj_prop method");
+  }
+
+  my $file = $s->selected;
+
+  my $o      = $obj . '_obj';
+  my $object = $s->{all}{$file}{$o};
+  my $attr   = "_$prop";
+  if (! exists $object->{$attr} ) {
+    $s->_scroak ("Non-existent $obj object attribute requested: '$prop'");
+  }
+
+  $object->{$attr} = $val;
+}
+
+sub get_filename {
+  my $s = shift;
+  my $file = $s->selected;
+
+  return $s->{all}{$file}{filename};
+}
+
 sub obj_meth {
   # Keep these args shifted individually
   my $s    = shift;
@@ -103,7 +129,7 @@ sub attr_defined {
 
 sub _exists {
   my $s = shift;
-  _scroak("'$_[0]' does not exist, aborting call from: ") if ! -e $_[0];
+  $s->_scroak("'$_[0]' does not exist, aborting call from: ") if ! -e $_[0];
 }
 
 sub _scroak {

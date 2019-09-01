@@ -11,7 +11,7 @@ use parent 'File::Collector::Base';
 sub AUTOLOAD {
   our $AUTOLOAD;
   my $s = shift;
-  $AUTOLOAD  =~ /.*::(next_|isa_)*(\w+)_files*$/ or
+  $AUTOLOAD  =~ /.*::(next_|isa_|get_)*(\w+)_files*$/ or
     croak "No such method: $AUTOLOAD";
 
   if (!$s->{files}{"$2_files"}) { $s->_scroak("No such file category exists: '$2' at "); }
@@ -23,6 +23,10 @@ sub AUTOLOAD {
 
   if ($1 eq 'isa_') {
     return $s->{files}{"$2_files"}->isa;
+  }
+
+  if ($1 eq 'get_') {
+    return values %{$s->{files}{"$2_files"}};
   }
 
   croak "No such method: $AUTOLOAD";
@@ -67,30 +71,6 @@ sub new {
 sub get_count {
   my $s = shift;
   return (scalar keys %{$s->{files}{all}})
-}
-
-sub set_obj_prop {
-  my $s = shift;
-  my $obj  = shift;
-  my $prop = shift;
-  my $val  = shift;
-
-  if (!$prop || !$obj) {
-    $s->_scroak ("Missing arguments to get_obj_prop method"
-      . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
-  }
-
-  my $file = $s->selected_file;
-
-  my $o = $obj . '_obj';
-  my $object = $s->{files}{$file}{$o};
-  my $attr = "_$prop";
-  if (! exists $object->{$attr} ) {
-    $s->_scroak ("Non-existent $obj object attribute requested: '$prop'"
-      . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
-  }
-
-  $object->{$attr} = $val;
 }
 
 sub add_obj {
@@ -198,12 +178,6 @@ sub _generate_short_names {
   }
 }
 
-sub get_filename { my $s = shift;
-  my $file = $s->selected_file || shift;
-
-  return $s->{files}{$file}{filename};
-}
-
 sub _classify_file {
   return;
 }
@@ -217,11 +191,12 @@ sub classify {
 sub _add_file {
   my ($s, $file) = @_;
 
-  $file = $s->_make_absolute($file);
-  $s->{files}{all}{$file}{full_path} = $file;
+  $file                                 = $s->_make_absolute($file);
+  $s->{files}{all}{$file}{full_path}    = $file;
+  my $filename                          = (fileparse($file))[0];
+  $s->{files}{all}{$file}{filename}     = $filename;
+
   push @{$s->{files}{new_files}}, $file if !$s->{files}{$file};
-  my $filename = (fileparse($file))[0];
-  $s->{files}{all}{$file}{filename} = $filename;
 }
 
 sub _make_absolute {
@@ -252,4 +227,154 @@ sub DESTROY {
 
 
 1; # Magic true value
-# ABSTRACT: this is what the module does
+# ABSTRACT: Base classes for collecting and processing files in complex ways
+
+
+__END__
+
+=head1 OVERVIEW
+
+C<File::Collector> and its companion module C<File::Collector::Processor> work
+together to provide base classes for custom modules that classify and process
+files and data related to the files.
+
+For example, let's say you need to import raw files from one directory into some
+kind of repository. Let's say that the content of the files needs to be parsed,
+validated, rendered and/or changed before getting imported. Complicating things
+further, let's say that the name and location of the file in the target
+repository is dependent upon the content of the files in some way.
+
+If this is a one-time operation, this can be accomplished with a series of
+one-off scripts that process and import your files with each script producing
+output suitable for the next script. But if such imports occur regularly or
+involve a high level of complexity, running separate scripts for each processing
+tage can be slow, tedious and error-prone.
+
+The C<File::Collector> and C<File::Collector::Processor> base modules are
+designed to help you create a chain of modules that can classify and process
+files to suit your desires. These base modules will take out much of he tedium
+that go into writing a series of discrete scripts to perform your task.
+
+=head1 SYNOPSIS
+
+  B<### A custom class for classifying files and setting up the processors>
+
+  pakcage File::Collector::YourCustomFileValidator;
+  use strict;
+  use warnings;
+
+  B<# The parent of this class is another File::Collector object.
+  # This is how you chain Collectors and Processors together.>
+  use parent File::Collector::YouCustomFileParser;
+
+  # add the names of your custom processor here
+  # processors must end with the string "_files"
+  sub _init_processors {
+    my $s = shift;
+    $s->SUPER::_init_processors( @_, qw ( good_files bad_files ) );
+  }
+
+  # You can add this method to add file resources and run your
+  # processes on them after they've been classified by the _classify_file
+  # method
+  sub add_resources {
+    $s->SUPER::add_resources(@_);  # add new files and classify them
+
+    # Run the modify_files() method on files classified as "good_files"
+    $s->good_files->modify_files;
+  }
+
+  # This method is called once for each new file found
+  # Use it to classify your files and create objects associated with the
+  # files.
+  sub _classify_file {
+    my $s = shift;
+    $s->SUPER::_classify_file;
+
+    # create an object and pass the name of the file to it
+    # $s->selcted contains the name of the file
+    my $data = SomeObject->new( $s->selected );
+
+    # associate the object with the file
+    $s->add_obj('data', $data);
+
+    # classify the file according to your criteria and add the
+    # file to the appropriate processor
+
+    if ( $data->{has_property} ) {
+      $s->classify('good_files');
+    } else {
+      $s->classify('bad_files');
+    }
+  }
+
+  ### Methods that process files or data associated found in this custom class
+
+  # Provides useful methods for processing our files and data
+  use parent File::Collector::Processor;
+
+  sub modify_files_somehow {
+    my $s = shift;
+
+    # iterate over files found in the classification
+    while ($s->next) {
+      # skip the file if it has already been processed
+      next if ($s->attr_defined ( 'data', 'processed' ));
+
+      # properties of objects from previous Classifiers can be easily accessed
+      my @values = $s->get_obj_prop ( 'header', 'needed_values' );
+
+      # You can easily run methods on objects here, too. Here we run the
+      # copy_file() method on the data object and pass it
+      # some values.
+      $s->obj_meth ( 'data', 'copy_file', \@values );
+    }
+  }
+
+
+=head1 DESCRIPTION
+
+=method method1()
+
+
+
+=method method2()
+
+
+
+=func function1()
+
+
+
+=func function2()
+
+
+
+=attr attribute1
+
+
+
+=attr attribute2
+
+
+
+#=head1 CONFIGURATION AND ENVIRONMENT
+#
+#{{$name}} requires no configuration files or environment variables.
+
+
+=head1 DEPENDENCIES
+
+=head1 AUTHOR NOTES
+
+=head2 Development status
+
+This module is currently in the beta stages and is actively supported and maintained. Suggestion for improvement are welcome.
+
+- Note possible future roadmap items.
+
+=head2 Motivation
+
+Provide motivation for writing the module here.
+
+#=head1 SEE ALSO

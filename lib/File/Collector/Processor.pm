@@ -32,10 +32,8 @@ sub isa {
 }
 
 sub add_file {
-  my $s = shift;
-  my $file = shift;
-  my $data = shift;
-  $s->{files}{$file} = $data; # add the file and data to the object
+  my ($s, $file, $data) = @_;
+  $s->{files}{$file}    = $data; # add the file's data to processor
 }
 
 sub print_short_names {
