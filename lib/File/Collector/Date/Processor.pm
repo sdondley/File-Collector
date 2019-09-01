@@ -1,19 +1,17 @@
-package File::Collector::DateClassifier::Iterator ;
+package File::Collector::Date::Processor ;
 use strict;
 use warnings;
 
-use parent qw (File::Collector::Iterator);
+use parent 'File::Collector::Processor';
 use Log::Log4perl::Shortcuts       qw(:all);
 
 sub print_blah_names {
   my $s = shift;
-  print $s->next->{short_path} . "\n\n";
+  while ($s->next) {
+    print $s->selected->{short_path} . "\n\n";
+  }
 }
 
-sub DESTROY {
-  my $s = shift;
-  $s->next;
-}
 
 1; # Magic true value
 # ABSTRACT: this is what the module does

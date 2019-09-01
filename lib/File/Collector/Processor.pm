@@ -1,57 +1,50 @@
-package File::Collector::Iterator ;
+package File::Collector::Processor ;
 use strict;
 use warnings;
 
 use Carp;
 use Log::Log4perl::Shortcuts       qw(:all);
 
+use parent 'File::Collector::Base';
+
 sub new {
-  my $class = shift;
-  bless [@_], $class;
+  my ($class, $all) = @_;
+
+  bless { files => {}, iterator => [], all => $all, selected => '' }, $class;
 }
 
 sub next {
   my $s = shift;
-  my $last = shift @$s;
-  push @$s, $last;
-  return  $last;
+  if (!$s->selected) {
+    my @files = values %{$s->{files}};
+    $s->{iterator} = \@files;
+  }
+  my $file               = shift @{$s->{iterator}};
+  $s->{selected}         = $file;
+  $s->{all}{selected}    = $file->{full_path};
+}
+
+sub isa {
+  my $s    = shift;
+  my $file = shift;
+
+  defined $s->{files}{$file};
 }
 
 sub add_file {
   my $s = shift;
   my $file = shift;
-  pop @$s;         # remove the trailing blank element
-  push @$s, $file; # add the new file to the queue
-  push @$s, '';    # replace the trailing blank element
+  my $data = shift;
+  $s->{files}{$file} = $data; # add the file and data to the object
 }
 
 sub print_short_names {
   my $s = shift;
-  print $s->next->{short_path} . "\n";
-}
-
-sub selected_file {
-  my $s = shift;
-  $s->[0]->{full_path} if $s->[0];
-}
-
-sub do {
-  my $self = shift;
-  bless \$self, 'File::Collector::Iterator::All';
-}
-
-{
-  package File::Collector::Iterator::All;
-  use Log::Log4perl::Shortcuts       qw(:all);
-  sub AUTOLOAD {
-    our $AUTOLOAD;
-    my $self = shift;
-    my @method = split /::/, $AUTOLOAD;
-    my $method = pop @method;
-    $$self->$method(@_) while ($$self->selected_file);
-    $$self->next(@_);  # resets the queue
+  while ($s->next) {
+    print $s->selected->{short_path} . "\n";
   }
 }
+
 
 1; # Magic true value
 # ABSTRACT: this is what the module does

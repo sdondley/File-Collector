@@ -2,18 +2,30 @@ package File::Collector ;
 use strict; use warnings;
 
 use Cwd;
-use Carp                           qw( croak cluck );
+use Carp;
 use File::Basename;
-use Log::Log4perl::Shortcuts       qw(:all);
+use Log::Log4perl::Shortcuts qw(:all);
+
+use parent 'File::Collector::Base';
 
 sub AUTOLOAD {
   our $AUTOLOAD;
   my $s = shift;
-  $AUTOLOAD  =~ /.*::(\w+)$/ or
+  $AUTOLOAD  =~ /.*::(next_|isa_)*(\w+)_files*$/ or
     croak "No such method: $AUTOLOAD";
 
-  if (!$s->{files}{$1}) { croak 'No such file category exists: ' . $1; }
-  else { return $s->{files}{$1}; }
+  if (!$s->{files}{"$2_files"}) { $s->_scroak("No such file category exists: '$2' at "); }
+  else { return $s->{files}{"$2_files"} if !$1; }
+
+  if ($1 eq 'next_') {
+    return $s->{files}{"$2_files"}->next;
+  }
+
+  if ($1 eq 'isa_') {
+    return $s->{files}{"$2_files"}->isa;
+  }
+
+  croak "No such method: $AUTOLOAD";
 }
 
 sub new {
@@ -40,10 +52,13 @@ sub new {
   my %opts = (%$default_opts, %$user_opts);
 
   my $s = bless {
-    files          => {},
+    files          => { all => {} },
     common_dir     => '',
+    selected       => '',
     options        => \%opts,
   }, $class;
+
+  $s->{all} = $s->{files}{all};
 
   $s->add_resources(@_);
   return $s;
@@ -54,75 +69,6 @@ sub get_count {
   return (scalar keys %{$s->{files}{all}})
 }
 
-sub obj_meth {
-  my $s    = shift;
-  my $obj  = shift;
-  my $meth = shift;
-  my $file = shift || $s->selected_file;
-
-  if (!$obj || !$meth) {
-    $s->_croak ("Missing arguments to obj_meth method"
-      . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
-  }
-
-  my $o    = $obj . '_obj';
-  $obj     = $s->{files}{$file}{$o};
-  $meth    = "$meth";
-
-  if (! $obj->can($meth)) {
-    $s->croak ("Non-existent method on $obj object: '$meth'"
-      . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
-  }
-  return $obj->$meth($s->short_name, @_);
-}
-
-sub short_name {
-  my $s    = shift;
-  my $file = shift;
-  $s->{files}{all}{$file}{short_path};
-}
-
-sub get_obj {
-  my $s = shift;
-  my $obj = shift;
-
-  if (!$obj) {
-    $s->_croak ("Missing arguments to get_obj method"
-      . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
-  }
-
-  my $file = $s->{_iterator}->selected_file;
-  my $o = $obj . '_obj';
-  return $s->{files}{$file}{$o};
-
-}
-
-sub get_obj_prop {
-  my $s    = shift;
-  my $obj  = shift;
-  my $prop = shift;
-  my $file = shift || $s->selected_file;
-
-  if (!$prop || !$obj || !$file) {
-    $s->_croak ("Missing arguments to get_obj_prop method"
-      . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
-  }
-
-  my $o = $obj . '_obj';
-  my $object = $s->{files}{$file}{$o};
-  my $attr = "_$prop";
-  if (! exists $object->{$attr} ) {
-    $s->croak ("Non-existent $obj object attribute requested: '$prop'"
-      . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
-  }
-  my $value = $object->{$attr};
-  if (ref $value eq 'ARRAY') {
-    return @$value;
-  } else {
-    return $value;
-  }
-}
-
 sub set_obj_prop {
   my $s = shift;
   my $obj  = shift;
@@ -130,7 +76,7 @@ sub set_obj_prop {
   my $val  = shift;
 
   if (!$prop || !$obj) {
-    $s->croak ("Missing arguments to get_obj_prop method"
+    $s->_scroak ("Missing arguments to get_obj_prop method"
       . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
   }
 
@@ -140,7 +86,7 @@ sub set_obj_prop {
   my $object = $s->{files}{$file}{$o};
   my $attr = "_$prop";
   if (! exists $object->{$attr} ) {
-    $s->croak ("Non-existent $obj object attribute requested: '$prop'"
+    $s->_scroak ("Non-existent $obj object attribute requested: '$prop'"
       . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
   }
 
@@ -148,22 +94,9 @@ sub set_obj_prop {
 }
 
 sub add_obj {
-  my ($s, $type, $file, $obj)     = @_;
-  my $ot                   = "${type}_obj";
-  $s->{files}{all}{$file}{$ot} = $obj;
-}
-
-sub has_obj {
-  my $s = shift;
-  my $type = shift;
-
-  if (!$type) {
-    $s->croak ("Missing argument to has method"
-      . ' at ' .  (caller(0))[1] . ', line ' . (caller(0))[2] );
-  }
-  my $file = shift || $s->selected_file;
-  my $to = "${type}_obj";
-  return defined $s->{files}{$file}{$to};
+  my ($s, $type, $obj)     = @_;
+  $s->_scroak("Missing args to 'add_obj' method. Aborting.") if (!$type || !$obj);
+  $s->{files}{all}{$s->selected}{"${type}_obj"}    = $obj;
 }
 
 sub get_files {
@@ -173,18 +106,41 @@ sub get_files {
   return @files;
 }
 
+sub _init_processors {
+  my $s = shift;
+  $s->add_processors(@_);
+}
+
+sub add_processors {
+  my $s = shift;
+  my @processors = @_;
+
+  my $class = ref($s);
+  $class =~ s/::(\w)+$//;
+  my $it_class = $class . '::Processor';
+  foreach my $it ( @processors ) {
+    next if $s->{files}{$it};            # don't overwrite existing processor
+    $s->{files}{$it} = $it_class->new($s->{files}{all});
+  }
+}
+
 sub add_resources {
   my ($s, @resources) = @_;
 
   # collect the files
   foreach my $resource (@resources) {
-    _exists($resource);
+    $s->_exists($resource);
     $s->_add_file($resource)          if -f $resource;
     $s->_get_file_manifest($resource) if -d $resource;
   }
 
   $s->_generate_short_names;                    # calculate the short names
-  $s->_classify_files($s->{files}{new_files});  # for subclass processing
+  $s->_init_processors;
+  foreach my $file (@{$s->{files}{new_files}}) {
+    $s->{selected} = $file;
+    $s->_classify_file;
+  }
+  undef $s->{selected};
   undef $s->{files}{new_files};                 # clear the new_file array
 }
 
@@ -242,31 +198,20 @@ sub _generate_short_names {
   }
 }
 
-sub get_filename {
-  my $s = shift;
+sub get_filename { my $s = shift;
   my $file = $s->selected_file || shift;
 
   return $s->{files}{$file}{filename};
 }
 
-sub add_iterators {
-  my $s = shift;
-  my @iterators = @_;
-
-  my $it_class = ref($s) . '::Iterator';
-  foreach my $it ( @iterators ) {
-    next if $s->{files}{$it};            # don't overwrite existing iterator
-    $s->{files}{$it} = $it_class->new();
-  }
+sub _classify_file {
+  return;
 }
 
-sub _classify_files {
-  return @_;
-}
-
-sub add_to_iterator {
-  my ($s, $type, $file, $objects) = @_;
-  $s->{files}{$type}->add_file($s->{files}{all}{$file});
+sub classify {
+  my ($s, $type) = @_;
+  my $file = $s->selected;
+  $s->{files}{$type}->add_file($file, $s->{files}{all}{$file});
 }
 
 sub _add_file {
@@ -274,7 +219,7 @@ sub _add_file {
 
   $file = $s->_make_absolute($file);
   $s->{files}{all}{$file}{full_path} = $file;
-  push @{$s->{files}{new_files}}, $file;
+  push @{$s->{files}{new_files}}, $file if !$s->{files}{$file};
   my $filename = (fileparse($file))[0];
   $s->{files}{all}{$file}{filename} = $filename;
 }
@@ -302,17 +247,9 @@ sub _get_file_manifest {
 
 }
 
-sub _exists {
-  _croak("'$_[0]' does not exist, aborting call from: ") if ! -e $_[0];
-}
-
-sub _croak {
-  my $msg = shift;
-  croak($msg . (fileparse((caller(1))[1]))[0] . ', line ' . (caller(1))[2] . "\n");
-}
-
 sub DESTROY {
 }
+
 
 1; # Magic true value
 # ABSTRACT: this is what the module does
