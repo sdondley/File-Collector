@@ -27,8 +27,7 @@ sub next {
 
 sub isa {
   my $s    = shift;
-  my $file = shift;
-
+  my $file = $s->selected;
   defined $s->{files}{$file};
 }
 
