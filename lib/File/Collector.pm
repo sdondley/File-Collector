@@ -103,6 +103,13 @@ sub get_files {
   return @files;
 }
 
+sub get_file {
+  my ($s, $file) = @_;
+  $s->_scroak('No file argument passed to method. Aborting.') if !$file;
+
+  return $s->{files}{all}{$file};
+}
+
 sub list_files_long {
   my $s = shift;
 
