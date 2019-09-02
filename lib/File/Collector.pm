@@ -8,6 +8,8 @@ use Log::Log4perl::Shortcuts qw(:all);
 
 use parent 'File::Collector::Base';
 
+# public methods
+
 sub AUTOLOAD {
   our $AUTOLOAD;
   my $s = shift;
@@ -68,42 +70,6 @@ sub new {
   return $s;
 }
 
-sub get_count {
-  my $s = shift;
-  return (scalar keys %{$s->{files}{all}})
-}
-
-sub add_obj {
-  my ($s, $type, $obj)     = @_;
-  $s->_scroak("Missing args to 'add_obj' method. Aborting.") if (!$type || !$obj);
-  $s->{files}{all}{$s->selected}{"${type}_obj"}    = $obj;
-}
-
-sub get_files {
-  my $s = shift;
-
-  my @files = sort keys %{$s->{files}{all}};
-  return @files;
-}
-
-sub _init_processors {
-  my $s = shift;
-  $s->add_processors(@_);
-}
-
-sub add_processors {
-  my $s = shift;
-  my @processors = @_;
-
-  my $class = ref($s);
-  $class =~ s/::(\w)+$//;
-  my $it_class = $class . '::Processor';
-  foreach my $it ( @processors ) {
-    next if $s->{files}{$it};            # don't overwrite existing processor
-    $s->{files}{$it} = $it_class->new($s->{files}{all});
-  }
-}
-
 sub add_resources {
   my ($s, @resources) = @_;
 
@@ -120,8 +86,21 @@ sub add_resources {
     $s->{selected} = $file;
     $s->_classify_file;
   }
+  $s->_run_processes;
   undef $s->{selected};
   undef $s->{files}{new_files};                 # clear the new_file array
+}
+
+sub get_count {
+  my $s = shift;
+  return (scalar keys %{$s->{files}{all}})
+}
+
+sub get_files {
+  my $s = shift;
+
+  my @files = sort keys %{$s->{files}{all}};
+  return @files;
 }
 
 sub list_files_long {
@@ -142,6 +121,24 @@ sub list_files {
 sub print_short_name {
   my $s = shift;
   print $s->short_name . "\n";
+}
+
+sub DESTROY {
+}
+
+# private methods
+
+sub _init_processors {
+  my ($s, @processors) = @_;
+
+  my $class    = ref($s);
+  $class       =~ s/::(\w)+$//;
+  my $it_class = $class . '::Processor';
+
+  foreach my $it ( @processors ) {
+    next if ($s->{files}{"${it}_files"});    # don't overwrite existing processor
+    $s->{files}{"${it}_files"} = $it_class->new($s->{files}{all});
+  }
 }
 
 sub _generate_short_names {
@@ -178,14 +175,16 @@ sub _generate_short_names {
   }
 }
 
-sub _classify_file {
-  return;
-}
-
-sub classify {
+sub _classify {
   my ($s, $type) = @_;
   my $file = $s->selected;
-  $s->{files}{$type}->add_file($file, $s->{files}{all}{$file});
+  my $t = $type . '_files';
+
+  # die if bad args given
+  $s->_croak("No $type argument sent to _classify method. Aborting.") if !$type;
+  $s->_croak("No processor called $type exists. Aborting.") if !$s->{files}{$t};
+
+  $s->{files}{$t}->_add_file($file, $s->{files}{all}{$file});
 }
 
 sub _add_file {
@@ -197,6 +196,13 @@ sub _add_file {
   $s->{files}{all}{$file}{filename}     = $filename;
 
   push @{$s->{files}{new_files}}, $file if !$s->{files}{$file};
+}
+
+sub _add_obj {
+  my ($s, $type, $obj) = @_;
+  $s->_scroak("Missing args to 'add_obj' method. Aborting.") if (!$type || !$obj);
+
+  $s->{files}{all}{$s->selected}{"${type}_obj"} = $obj;
 }
 
 sub _make_absolute {
@@ -222,114 +228,154 @@ sub _get_file_manifest {
 
 }
 
-sub DESTROY {
+# fallback stub methods needed if not used by any subclasses
+
+sub _classify_file {
 }
 
+sub _run_processes {
+}
 
 1; # Magic true value
-# ABSTRACT: Base classes for collecting and processing files in complex ways
-
+# ABSTRACT: Collects files and sets up file Processors
 
 __END__
 
 =head1 OVERVIEW
 
-C<File::Collector> and its companion module C<File::Collector::Processor> work
-together to provide base classes for custom modules that classify and process
-files and data related to the files.
+C<File::Collector> and its companion module C<File::Collector::Processor> are
+base classes designed to make it easier for creating custom modules to classify
+and process a collection of files as well as generate, track and process data
+related to files in the collection.
 
 For example, let's say you need to import raw files from one directory into some
-kind of repository. Let's say that the content of the files needs to be parsed,
-validated, rendered and/or changed before getting imported. Complicating things
-further, let's say that the name and location of the file in the target
-repository is dependent upon the content of the files in some way.
+kind of repository. Let's say that files in the directory need to be filtered
+and the content of the files needs to be parsed, validated, rendered and/or
+changed before getting imported. Complicating things further, let's say that the
+name and location of the file in the target repository is dependent upon the
+content of the files in some way. Oh, and you also have to check to make sure
+the file hasn't already been imported.
 
-If this is a one-time operation, this can be accomplished with a series of
-one-off scripts that process and import your files with each script producing
-output suitable for the next script. But if such imports occur regularly or
-involve a high level of complexity, running separate scripts for each processing
-tage can be slow, tedious and error-prone.
+This kind of task can be acomplished with a series of one-off scripts that
+process and import your files with each script producing output suitable for the
+next script. But if such imports occur regularly or involve a high level of
+complexity, running separate scripts for each processing stage can be slow,
+tedious, error-prone and not easily reproducible.
 
-The C<File::Collector> and C<File::Collector::Processor> base modules are
-designed to help you create a chain of modules that can classify and process
-files to suit your desires. These base modules will take out much of he tedium
-that go into writing a series of discrete scripts to perform your task.
+The C<File::Collector> and C<File::Collector::Processor> base modules can help
+you set up a chain of modules to combine a series of workflows into a single
+logical package that will make complicated file processing more robust and
+testable as well far less tedious and much faster to code.
 
 =head1 SYNOPSIS
 
-  B<### A custom class for classifying files and setting up the processors>
+First, create your custom class with the appropriate methods for classifying files
+and setting up the processors.
 
-  pakcage File::Collector::YourCustomFileValidator;
-  use strict;
-  use warnings;
+  pakcage File::Collector::YourClassifier;
+  use strict; use warnings;
 
-  B<# The parent of this class is another File::Collector object.
-  # This is how you chain Collectors and Processors together.>
-  use parent File::Collector::YouCustomFileParser;
+  # This package contains your processing methods (see below)
+  use File::Collector::YourClassifier::Processor;
 
-  # add the names of your custom processor here
-  # processors must end with the string "_files"
+  # The parent of this class is another File::Collector class. This is how you
+  # chain your Collectors and Processors together.
+  use parent File::Collector::AnotherCustomFileClassifier;
+
+  # Add the names of your custom processor here. Processors are just a
+  # collection of files with associated methods that make it convenient for
+  # manipulating files and their data.
   sub _init_processors {
     my $s = shift;
-    $s->SUPER::_init_processors( @_, qw ( good_files bad_files ) );
+    $s->SUPER::_init_processors( @_, qw ( good bad ) );
   }
 
-  # You can add this method to add file resources and run your
-  # processes on them after they've been classified by the _classify_file
-  # method
-  sub add_resources {
-    $s->SUPER::add_resources(@_);  # add new files and classify them
-
-    # Run the modify_files() method on files classified as "good_files"
-    $s->good_files->modify_files;
-  }
-
-  # This method is called once for each new file found
-  # Use it to classify your files and create objects associated with the
-  # files.
+  # This method is called once for each new file found. It classifies your
+  # files and create objects which can be associated with your files.
   sub _classify_file {
     my $s = shift;
+
+    # allow parent classes to classify the files first
     $s->SUPER::_classify_file;
 
     # create an object and pass the name of the file to it
-    # $s->selcted contains the name of the file
+    # $s->selected is automatically set to include the  the name of the file
+    # getting processed so you don't have to think about it.
     my $data = SomeObject->new( $s->selected );
 
-    # associate the object with the file
+    # associate the newly created object with the file
     $s->add_obj('data', $data);
 
-    # classify the file according to your criteria and add the
-    # file to the appropriate processor
-
+    # Classify the files according to criteria you determine to add the file
+    # to a processor category
     if ( $data->{has_property} ) {
-      $s->classify('good_files');
+      $s->classify('good');
     } else {
-      $s->classify('bad_files');
+      $s->classify('bad');
     }
   }
 
-  ### Methods that process files or data associated found in this custom class
-
-  # Provides useful methods for processing our files and data
-  use parent File::Collector::Processor;
-
-  sub modify_files_somehow {
+  # The _run_processes method contains method calls to your processors
+  sub _run_processes {
     my $s = shift;
 
-    # iterate over files found in the classification
-    while ($s->next) {
-      # skip the file if it has already been processed
-      next if ($s->attr_defined ( 'data', 'processed' ));
+    # run processes of parent classes first
+    $s->SUPER::_run_processes;
 
-      # properties of objects from previous Classifiers can be easily accessed
-      my @values = $s->get_obj_prop ( 'header', 'needed_values' );
+    # Run some methods on files classified as "good". The "do" method is a
+    # method that automatically iterates over the files in the category to make
+    # it super easy to code loops.
+    $s->good_files->do->modify;
 
-      # You can easily run methods on objects here, too. Here we run the
-      # copy_file() method on the data object and pass it
-      # some values.
-      $s->obj_meth ( 'data', 'copy_file', \@values );
-    }
+    # Run some methods on files classified as "bad"
+    $s->bad_files->do->fix;
+    $s->bad_files->do->modify;
+
+    # You can call methods not in the current class as long as they are defined
+    # in one of your parent Processor classes.
+    $s->good_files->do->move;
+    $s->bad_files->do->move;
   }
+
+Now create the Processor class to contain the methods needed to  processing the
+files or data.
+
+  use File::Collector::YourClassifier::Processor;
+  use parent File::Collector::Processor;
+
+  # This method is run once for each file
+  sub modify {
+    my $s = shift;
+
+    # skip the file if it has already been processed
+    next if ($s->attr_defined ( 'data', 'processed' ));
+
+    # properties of objects from previous Classifiers can be easily accessed
+    my @values = $s->get_obj_prop ( 'header', 'needed_values' );
+
+    # You can easily run methods on objects here, too. Here we run the
+    # copy_file() method on the data object and pass it
+    # some values.
+    $s->obj_meth ( 'data', 'copy_file', \@values );
+  }
+
+  # Code for fixing "bad" files goes here.
+  sub fix {
+    ...
+  }
+
+Now that your classes have been created, you can classify and process the files:
+
+   my $collector = File::Collector::YourClassifier->new('my/dir');
+
+   # The $collector object has useful methods
+   $collector->get_count; # returns total number of files in the collection
+
+   # Some behind-the-scenes magic is employed to make it painless to iterate
+   # over files and run methods on them.
+   while ($collector->next_good_files) {
+     $collector->print_short_name;
+   }
 
 
 =head1 DESCRIPTION
