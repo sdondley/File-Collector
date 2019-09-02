@@ -28,7 +28,7 @@ sub AUTOLOAD {
   }
 
   if ($1 eq 'get_') {
-    return values %{$s->{files}{"$2_files"}};
+    return values %{$s->{files}{"$2_files"}{files}};
   }
 
   croak "No such method: $AUTOLOAD";
@@ -137,7 +137,7 @@ sub _init_processors {
 
   foreach my $it ( @processors ) {
     next if ($s->{files}{"${it}_files"});    # don't overwrite existing processor
-    $s->{files}{"${it}_files"} = $it_class->new($s->{files}{all});
+    $s->{files}{"${it}_files"} = $it_class->new($s->{files}{all}, \($s->{selected}));
   }
 }
 
@@ -350,13 +350,13 @@ files or data.
     # skip the file if it has already been processed
     next if ($s->attr_defined ( 'data', 'processed' ));
 
-    # properties of objects from previous Classifiers can be easily accessed
+    # properties of objects added by previous Collector classes can be easily accessed
     my @values = $s->get_obj_prop ( 'header', 'needed_values' );
 
     # You can easily run methods on objects here, too. Here we run the
-    # copy_file() method on the data object and pass it
+    # add_header() method on the data object and pass it
     # some values.
-    $s->obj_meth ( 'data', 'copy_file', \@values );
+    $s->obj_meth ( 'data', 'add_header', \@values );
   }
 
   # Code for fixing "bad" files goes here.
@@ -364,16 +364,17 @@ files or data.
     ...
   }
 
-Now that your classes have been created, you can classify and process the files:
+Now that your classes have been created, you can classify and process the files
+in a script:
 
    my $collector = File::Collector::YourClassifier->new('my/dir');
 
-   # The $collector object has useful methods
+   # The $collector object has methods you can call
    $collector->get_count; # returns total number of files in the collection
 
    # Some behind-the-scenes magic is employed to make it painless to iterate
    # over files and run methods on them.
-   while ($collector->next_good_files) {
+   while ($collector->next_good_file) {
      $collector->print_short_name;
    }
 
