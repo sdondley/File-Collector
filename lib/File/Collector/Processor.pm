@@ -31,18 +31,37 @@ sub isa {
   defined $s->{files}{$file};
 }
 
-sub add_file {
+sub _add_file {
   my ($s, $file, $data) = @_;
   $s->{files}{$file}    = $data; # add the file's data to processor
 }
 
 sub print_short_names {
   my $s = shift;
-  while ($s->next) {
-    print $s->selected->{short_path} . "\n";
-  }
+  print $s->selected->{short_path} . "\n";
 }
 
+sub do {
+  my $s = shift;
+  bless \$s, 'File::Collector::Processor::Do';
+}
+
+{
+  package File::Collector::Processor::Do;
+  use Log::Log4perl::Shortcuts qw(:all);
+
+  sub AUTOLOAD {
+    my $self = shift;
+    our $AUTOLOAD;
+    logd $AUTOLOAD;
+    my ($method) = $AUTOLOAD =~ m/::([^:]+)$/;
+    logd ref $$self;
+    logd $method;
+    $$self->$method(@_) while ($$self->next);
+  }
+
+  sub DESTROY {}
+}
 
 1; # Magic true value
 # ABSTRACT: this is what the module does
