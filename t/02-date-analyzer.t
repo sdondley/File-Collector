@@ -14,7 +14,7 @@ $t0 = Benchmark->new;
 
 
 
-my $tests = 3; # keep on line 17 for ,i (increment and ,ii (decrement)
+my $tests = 5; # keep on line 17 for ,i (increment and ,ii (decrement)
 plan tests => $tests;
 
 # 1 - 7
@@ -30,6 +30,11 @@ plan tests => $tests;
 
  stdout_like { $da->some_files->do->print_short_names } qr/^dir2\/file\d\n[^\n]/ms,
    'prints first file with no double line break';
+
+ is 9, $da->get_some_files, 'returns list of iles from a category';
+
+ stdout_like { while ($da->next_some_file) { $da->print_short_name; } } qr/^file2$/ms,
+   'next_ method works';
 }
 
 my $t1 = Benchmark->new;
