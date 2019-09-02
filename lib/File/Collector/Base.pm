@@ -30,13 +30,6 @@ sub get_obj_prop {
   }
 }
 
-sub short_name {
-  my $s    = shift;
-  my $file = ref ($s->selected) eq 'HASH'
-             ? $s->selected->{full_path}
-             : $s->selected;
-  $s->{all}{$file}{short_path};
-}
 
 sub get_obj {
   my ($s, $obj) = @_;
@@ -125,6 +118,21 @@ sub attr_defined {
   my $obj = shift;
   my $attr = shift;
   return defined $s->selected->{"${obj}_obj"}->{"_${attr}"};
+}
+
+sub print_short_name {
+  my $s = shift;
+
+  $s->_scroak ("The 'print_short_name' method does not accept methods") if @_;
+  print $s->_short_name . "\n";
+}
+
+sub _short_name {
+  my $s    = shift;
+  my $file = ref ($s->selected) eq 'HASH'
+             ? $s->selected->{full_path}
+             : $s->selected;
+  $s->{all}{$file}{short_path};
 }
 
 sub _exists {
