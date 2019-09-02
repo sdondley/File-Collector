@@ -10,14 +10,14 @@ use parent 'File::Collector::Base';
 sub new {
   my ($class, $all, $cselected) = @_;
 
-  bless { files => {}, iterator => [], all => $all,
+  bless { _files => {}, iterator => [], all => $all,
           selected => '', cselected => $cselected }, $class;
 }
 
 sub next {
   my $s = shift;
   if (!$s->selected) {
-    my @files = values %{$s->{files}};
+    my @files = values %{$s->{_files}};
     $s->{iterator} = \@files;
   }
   my $file               = shift @{$s->{iterator}};
@@ -28,12 +28,12 @@ sub next {
 sub isa {
   my $s    = shift;
   my $file = $s->selected;
-  defined $s->{files}{$file};
+  defined $s->{_files}{$file};
 }
 
 sub _add_file {
   my ($s, $file, $data) = @_;
-  $s->{files}{$file}    = $data; # add the file's data to processor
+  $s->{_files}{$file}    = $data; # add the file's data to processor
 }
 
 sub print_short_names {

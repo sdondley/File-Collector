@@ -16,19 +16,19 @@ sub AUTOLOAD {
   $AUTOLOAD  =~ /.*::(next_|isa_|get_)*(\w+)_files*$/ or
     croak "No such method: $AUTOLOAD";
 
-  if (!$s->{files}{"$2_files"}) { $s->_scroak("No such file category exists: '$2' at "); }
-  else { return $s->{files}{"$2_files"} if !$1; }
+  if (!$s->{_files}{"$2_files"}) { $s->_scroak("No such file category exists: '$2' at "); }
+  else { return $s->{_files}{"$2_files"} if !$1; }
 
   if ($1 eq 'next_') {
-    return $s->{files}{"$2_files"}->next;
+    return $s->{_files}{"$2_files"}->next;
   }
 
   if ($1 eq 'isa_') {
-    return $s->{files}{"$2_files"}->isa;
+    return $s->{_files}{"$2_files"}->isa;
   }
 
   if ($1 eq 'get_') {
-    return values %{$s->{files}{"$2_files"}{files}};
+    return values %{$s->{_files}{"$2_files"}{_files}};
   }
 
   croak "No such method: $AUTOLOAD";
@@ -58,13 +58,13 @@ sub new {
   my %opts = (%$default_opts, %$user_opts);
 
   my $s = bless {
-    files          => { all => {} },
-    common_dir     => '',
-    selected       => '',
-    options        => \%opts,
+    _files          => { all => {} },
+    _common_dir     => '',
+    selected        => '',
+    _options        => \%opts,
   }, $class;
 
-  $s->{all} = $s->{files}{all};
+  $s->{all} = $s->{_files}{all};
 
   $s->add_resources(@_);
   return $s;
@@ -82,24 +82,24 @@ sub add_resources {
 
   $s->_generate_short_names;                    # calculate the short names
   $s->_init_processors;
-  foreach my $file (@{$s->{files}{new_files}}) {
+  foreach my $file (@{$s->{_files}{new}}) {
     $s->{selected} = $file;
     $s->_classify_file;
   }
   $s->_run_processes;
   undef $s->{selected};
-  undef $s->{files}{new_files};                 # clear the new_file array
+  undef $s->{_files}{new};                 # clear the new_file array
 }
 
 sub get_count {
   my $s = shift;
-  return (scalar keys %{$s->{files}{all}})
+  return (scalar keys %{$s->{_files}{all}})
 }
 
 sub get_files {
   my $s = shift;
 
-  my @files = sort keys %{$s->{files}{all}};
+  my @files = sort keys %{$s->{_files}{all}};
   return @files;
 }
 
@@ -107,7 +107,7 @@ sub get_file {
   my ($s, $file) = @_;
   $s->_scroak('No file argument passed to method. Aborting.') if !$file;
 
-  return $s->{files}{all}{$file};
+  return $s->{_files}{all}{$file};
 }
 
 sub list_files_long {
@@ -120,8 +120,8 @@ sub list_files_long {
 sub list_files {
   my $s = shift;
 
-  my @files = map { $s->{files}{all}{$_}{short_path} } sort keys %{$s->{files}{all}};
-  print "\nFiles found in '".$s->{common_dir}."':\n\n";
+  my @files = map { $s->{_files}{all}{$_}{short_path} } sort keys %{$s->{_files}{all}};
+  print "\nFiles found in '".$s->{_common_dir}."':\n\n";
   print $_ . "\n" for @files;
 }
 
@@ -138,8 +138,8 @@ sub _init_processors {
   my $it_class = $class . '::Processor';
 
   foreach my $it ( @processors ) {
-    next if ($s->{files}{"${it}_files"});    # don't overwrite existing processor
-    $s->{files}{"${it}_files"} = $it_class->new($s->{files}{all}, \($s->{selected}));
+    next if ($s->{_files}{"${it}_files"});    # don't overwrite existing processor
+    $s->{_files}{"${it}_files"} = $it_class->new($s->{_files}{all}, \($s->{selected}));
   }
 }
 
@@ -150,9 +150,9 @@ sub _classify {
 
   # die if bad args given
   $s->_croak("No $type argument sent to _classify method. Aborting.") if !$type;
-  $s->_croak("No processor called $type exists. Aborting.") if !$s->{files}{$t};
+  $s->_croak("No processor called $type exists. Aborting.") if !$s->{_files}{$t};
 
-  $s->{files}{$t}->_add_file($file, $s->{files}{all}{$file});
+  $s->{_files}{$t}->_add_file($file, $s->{_files}{all}{$file});
 }
 
 sub _generate_short_names {
@@ -178,14 +178,14 @@ sub _generate_short_names {
     }
   }
 
-  $s->{common_dir} = $longest_string || (fileparse($file))[1];
+  $s->{_common_dir} = $longest_string || (fileparse($file))[1];
 
   if (@files) {
     foreach my $file ( @files, $file ) {
-      $s->{files}{all}{$file}{short_path} = $file =~ s/$longest_string//r;
+      $s->{_files}{all}{$file}{short_path} = $file =~ s/$longest_string//r;
     }
   } else {
-    $s->{files}{all}{$file}{short_path} = $file;
+    $s->{_files}{all}{$file}{short_path} = $file;
   }
 }
 
@@ -193,18 +193,18 @@ sub _add_file {
   my ($s, $file) = @_;
 
   $file                                 = $s->_make_absolute($file);
-  $s->{files}{all}{$file}{full_path}    = $file;
+  $s->{_files}{all}{$file}{full_path}   = $file;
   my $filename                          = (fileparse($file))[0];
-  $s->{files}{all}{$file}{filename}     = $filename;
+  $s->{_files}{all}{$file}{filename}    = $filename;
 
-  push @{$s->{files}{new_files}}, $file if !$s->{files}{$file};
+  push @{$s->{_files}{new}}, $file if !$s->{_files}{$file};
 }
 
 sub _add_obj {
   my ($s, $type, $obj) = @_;
   $s->_scroak("Missing args to 'add_obj' method. Aborting.") if (!$type || !$obj);
 
-  $s->{files}{all}{$s->selected}{"${type}_obj"} = $obj;
+  $s->{_files}{all}{$s->selected}{"${type}_obj"} = $obj;
 }
 
 sub _make_absolute {
@@ -222,7 +222,7 @@ sub _get_file_manifest {
   my @files = grep { -f "$dir/$_" } @dirs_and_files;
   $s->_add_file("$dir/$_") for @files;
 
-  my @dirs  = grep { -d "$dir/$_" } @dirs_and_files if $s->{options}{recurse};
+  my @dirs  = grep { -d "$dir/$_" } @dirs_and_files if $s->{_options}{recurse};
   foreach my $tdir (@dirs) {
     opendir (my $tdh, "$dir/$tdir") || die "Can't opendir $tdir: $!";
     $s->_get_file_manifest("$dir/$tdir");
@@ -476,15 +476,22 @@ This method should call the C<SUPER::_classify_file> method so that any parent c
 
 =method _classify( $category_name )
 
-This method is tpyically called from within the C<_classify_file> method to add
-a file to a categorized collection of files contained within a C<Processor>
-object that, in turn, gets added to the C<Collector> object. The
-C<$category_name> must be one of the processors provided by the
-C<_init_processor> methods.
+This method is typically called from within the C<_classify_file> method. It
+adds the file currently getting pocessed to a collection of C<$category_name>
+files contained within a C<Processor> object which, in turn, belongs to the
+C<Collector> object.  The C<$category_name> must match one of the processor
+names provided by the C<_init_processor> methods.
+
+=method _add_obj( $object_name, $object )
+
+Like the C<_classify> method, this method is typically called from within the
+C<_classify_file> method. It associates the object specified by C<$object> to an
+arbitrary name, specified by C<$object_name>, with the file currently getting
+processed.
 
 =method _run_processes()
 
-  sub _classify_file {
+  sub _run_processes {
     my $s = shift;
     $s->SUPER::_run_processes();
 
@@ -492,16 +499,12 @@ C<_init_processor> methods.
   }
 
 Make method calls associated with the various C<Processor>s inside of the
-C<_run_processes> method.
+C<_run_processes> method. Note the inclusion of the C<SUPER::_run_processes> so
+method call so parent classes can run their processor methods first.
 
-=attr attribute2
+=head1 CONFIGURATION AND ENVIRONMENT
 
-
-
-#=head1 CONFIGURATION AND ENVIRONMENT
-#
-#{{$name}} requires no configuration files or environment variables.
-
+Requires no configuration files or environment variables.
 
 =head1 DEPENDENCIES
 
