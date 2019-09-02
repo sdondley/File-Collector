@@ -125,11 +125,6 @@ sub list_files {
   print $_ . "\n" for @files;
 }
 
-sub print_short_name {
-  my $s = shift;
-  print $s->short_name . "\n";
-}
-
 sub DESTROY {
 }
 
@@ -146,6 +141,18 @@ sub _init_processors {
     next if ($s->{files}{"${it}_files"});    # don't overwrite existing processor
     $s->{files}{"${it}_files"} = $it_class->new($s->{files}{all}, \($s->{selected}));
   }
+}
+
+sub _classify {
+  my ($s, $type) = @_;
+  my $file = $s->selected;
+  my $t = $type . '_files';
+
+  # die if bad args given
+  $s->_croak("No $type argument sent to _classify method. Aborting.") if !$type;
+  $s->_croak("No processor called $type exists. Aborting.") if !$s->{files}{$t};
+
+  $s->{files}{$t}->_add_file($file, $s->{files}{all}{$file});
 }
 
 sub _generate_short_names {
@@ -180,18 +187,6 @@ sub _generate_short_names {
   } else {
     $s->{files}{all}{$file}{short_path} = $file;
   }
-}
-
-sub _classify {
-  my ($s, $type) = @_;
-  my $file = $s->selected;
-  my $t = $type . '_files';
-
-  # die if bad args given
-  $s->_croak("No $type argument sent to _classify method. Aborting.") if !$type;
-  $s->_croak("No processor called $type exists. Aborting.") if !$s->{files}{$t};
-
-  $s->{files}{$t}->_add_file($file, $s->{files}{all}{$file});
 }
 
 sub _add_file {
@@ -251,8 +246,8 @@ __END__
 =head1 OVERVIEW
 
 C<File::Collector> and its companion module C<File::Collector::Processor> are
-base classes designed to make it easier for creating custom modules to classify
-and process a collection of files as well as generate, track and process data
+base classes designed to make it easier to create custom modules for classifying
+and processing a collection of files as well as generate, track and process data
 related to files in the collection.
 
 For example, let's say you need to import raw files from one directory into some
@@ -265,14 +260,14 @@ the file hasn't already been imported.
 
 This kind of task can be acomplished with a series of one-off scripts that
 process and import your files with each script producing output suitable for the
-next script. But if such imports occur regularly or involve a high level of
-complexity, running separate scripts for each processing stage can be slow,
-tedious, error-prone and not easily reproducible.
+next script. But if such imports involve a high level of complexity, running
+separate scripts for each processing stage can be slow, tedious, error-prone and
+a headache to maintain and organize.
 
 The C<File::Collector> and C<File::Collector::Processor> base modules can help
 you set up a chain of modules to combine a series of workflows into a single
 logical package that will make complicated file processing more robust and
-testable as well far less tedious and much faster to code.
+testable as well as far less tedious and easier to code.
 
 =head1 SYNOPSIS
 
@@ -305,20 +300,20 @@ and setting up the processors.
     # allow parent classes to classify the files first
     $s->SUPER::_classify_file;
 
-    # create an object and pass the name of the file to it
+    # Create an object and pass the name of the file to it.
     # $s->selected is automatically set to include the  the name of the file
     # getting processed so you don't have to think about it.
     my $data = SomeObject->new( $s->selected );
 
-    # associate the newly created object with the file
+    # Associate the newly created object with the file
     $s->add_obj('data', $data);
 
     # Classify the files according to criteria you determine to add the file
     # to a processor category
     if ( $data->{has_property} ) {
-      $s->classify('good');
+      $s->_classify('good');
     } else {
-      $s->classify('bad');
+      $s->_classify('bad');
     }
   }
 
@@ -344,8 +339,8 @@ and setting up the processors.
     $s->bad_files->do->move;
   }
 
-Now create the Processor class to contain the methods needed to  processing the
-files or data.
+Now create the Processor class to contain the methods for processing the files
+or data.
 
   use File::Collector::YourClassifier::Processor;
   use parent File::Collector::Processor;
@@ -372,9 +367,9 @@ files or data.
   }
 
 Now that your classes have been created, you can classify and process the files
-in a script:
+with one line:
 
-   my $collector = File::Collector::YourClassifier->new('my/dir');
+   my $collector = File::Collector::YourClassifier->new('my/dir', { recurse => 0 });
 
    # The $collector object has methods you can call
    $collector->get_count; # returns total number of files in the collection
@@ -385,27 +380,110 @@ in a script:
      $collector->print_short_name;
    }
 
-
 =head1 DESCRIPTION
 
-=method method1()
+=head2 Regular Collector Methods
 
+The methods below are found in the C<File::Collector> class. Be sure to look at the
+L<File::Collector::Base> class for methods meant for use by iterators.
 
+=method new( 'dir', 'file', ..., \%opts  )
 
-=method method2()
+  my $collector = File::Collector::MyClassifier->new('my/directory', { recurse => 0 } );
 
+Creates a C<Collector> object to collect files in the argument list. An option
+hash can be supplied to turn directory recursion off with C<recurse> which is
+set to true by default. Once created, the C<Collector> immediately goes to work
+collecting and processing the files according to the workflow you created with
+your custom modules.
 
+C<new> returns an object which contains all the files, their processing classes,
+and any data you have associated with the files. This object has serveral
+methods that can be used to inspect the object.
 
-=func function1()
+=method add_resources( 'dir', 'file' )
 
+  $collector->add_resources( 'file1', 'dir2', ... );
 
+Adds additional file resources to the collection and processes them. This method
+accepts no option hash.
 
-=func function2()
+=method get_count()
 
+  $collector->get_count;
 
+Returns the total number of files in the collection.
 
-=attr attribute1
+=method get_files()
 
+  my @all_files = $collector->get_files;
+
+Returns a list of the full path of each file in the collection.
+
+=method get_file($file)
+
+  my $file = $collector->get_files('/full/path/to/file.txt');
+
+Returns has reference of the data an objects associated with a file.
+
+=method list_files_long()
+
+Prints the full path names of each file in the collection, sorted alphabetically, to STDOUT.
+
+=method list_files()
+
+Same as C<list_files_long> but prints the files' paths relative to the top level
+directory shared by all the files in the collections.
+
+=head2 Private Collector Methods for Child Classes
+
+The following methods, though private, are meant to be overridden by the child
+classes of C<File::Collector> that you provide.
+
+=method _init_processors( @_, @your_custom_file_categories )
+
+  sub _init_processors {
+    my $s = shift;
+    $s->SUPER::_init_processor( @_, ( 'category_1', 'category_2' ) );
+  }
+
+Adds categories for your Collector class. Internally, this method adds a new
+Processor object to the C<Collector> so that C<Processor> methods found in your
+custom C<Processor> class can be run on your files. This method is run once upon
+C<Collector> object construction.
+
+This method should call the C<SUPER::_init_processors> method and pass C<@_>
+to it along with your custom list of categories.
+
+=method _classify_file()
+
+  sub _classify_file {
+    my $s = shift;
+    $s->SUPER::_classify_file();
+
+    # File classifying and analysis logic goes here
+  }
+
+Use this method to classify your files and associate objects with your files
+using the methods provided by the C<Collector> class. This method is run
+once for each file in the collection.
+
+See the L<File::Collector::Base> documentation for methods for accessing and
+associating information about the file which you can use inside of this method.
+
+This method should call the C<SUPER::_classify_file> method so that any parent classes can classify and add file processors to the C<Collector> object.
+
+=method _classify( $category_name )
+
+This method is tpyically called from within the C<_classify_file> method to add
+a file to a categorized collection of files contained within a C<Processor>
+object that, in turn, gets added to the C<Collector> object. The
+C<$category_name> must be one of the processors provided by the
+C<_init_processor> methods.
+
+=method _run_processes()
+
+You can make the method calls associated with the various C<Processor>s here.
 
 
 =attr attribute2
