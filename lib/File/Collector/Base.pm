@@ -30,7 +30,6 @@ sub get_obj_prop {
   }
 }
 
-
 sub get_obj {
   my ($s, $obj) = @_;
 
