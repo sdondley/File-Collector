@@ -7,13 +7,14 @@ use parent qw ( File::Collector );
 
 sub _init_processors {
   my $s = shift;
-  $s->SUPER::_init_processors( @_, qw ( some_files other_files ) );
+
+  $s->SUPER::_init_processors( @_, qw ( some other ) );
 }
 
 sub _classify_file {
   my $s = shift;
 
-  $s->classify('some_files');
+  $s->_classify('some');
 }
 
 1;
