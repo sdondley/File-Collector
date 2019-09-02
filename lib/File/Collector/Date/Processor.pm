@@ -10,7 +10,6 @@ sub print_blah_names {
   print $s->selected->{short_path} . "\n\n";
 }
 
-
 1; # Magic true value
 # ABSTRACT: this is what the module does
 
