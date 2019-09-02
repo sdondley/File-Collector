@@ -339,8 +339,9 @@ and setting up the processors.
     $s->bad_files->do->move;
   }
 
-Now create the Processor class to contain the methods for processing the files
-or data.
+Now create a Processor class to contain the methods for processing the files
+or data. Note that your C<Processor> class must have the same package name as
+the class using this class with "::Processor" tacked on to the end.
 
   use File::Collector::YourClassifier::Processor;
   use parent File::Collector::Processor;
@@ -374,8 +375,8 @@ with one line:
    # The $collector object has methods you can call
    $collector->get_count; # returns total number of files in the collection
 
-   # Some behind-the-scenes magic is employed to make it painless to iterate
-   # over files and run methods on them.
+   # Some behind-the-scenes magic is employed by some methods to make it
+   # painless to iterate over files and run methods on them.
    while ($collector->next_good_file) {
      $collector->print_short_name;
    }
@@ -483,8 +484,15 @@ C<_init_processor> methods.
 
 =method _run_processes()
 
-You can make the method calls associated with the various C<Processor>s here.
+  sub _classify_file {
+    my $s = shift;
+    $s->SUPER::_run_processes();
 
+    # Processor method calls go here
+  }
+
+Make method calls associated with the various C<Processor>s inside of the
+C<_run_processes> method.
 
 =attr attribute2
 
