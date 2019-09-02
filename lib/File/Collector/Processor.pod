@@ -1,0 +1,92 @@
+=head1 OVERVIEW
+
+This is the base class for custom C<Processor> classes. This class should
+contain methods for manipulating files and data contained in your C<Collector>
+object. To keep this class clean and small, consider reserving any
+heavy lifting for objects you have associated with the files. This will go a long way to keeping
+
+=head1 SYNOPSIS
+
+  package File::Collector::CustomClassifier::Processor
+
+  use parent 'File::Collector::Processor';
+
+  sub a_useful_method {
+    my $s = shift;
+
+    # do useful stuff
+    ...
+  }
+
+  sub another_useful_method {
+    my $s = shift;
+
+    # do more useful stuff
+    ...
+  }
+
+=head1 DESCRIPTION
+
+The C<Processor>
+
+=method do()
+
+  $collector->some_files->do->run_method;
+
+The C<do> method will iterate over all the files contained in the list of files
+classified under the name of the method call preceding it. In the example above,
+it will iterate over all the files classified under "some" by the custom
+C<Collector> classes. For each file found in the specified category, it will run
+the method in the C<Processor> class which is pecified by "run_method" in the
+example above.
+
+So for example, if you wanted to delete all the files classified as "bad" files, that might look something like this:
+
+  $collector->bad_files->do->delete;
+
+
+
+=method method2()
+
+
+
+=func function1()
+
+
+
+=func function2()
+
+
+
+=attr attribute1
+
+
+
+=attr attribute2
+
+
+
+#=head1 CONFIGURATION AND ENVIRONMENT
+#
+#{{$name}} requires no configuration files or environment variables.
+
+
+=head1 DEPENDENCIES
+
+blah
+
+=head1 AUTHOR NOTES
+
+blah
+
+=head2 Development status
+
+This module is currently in the beta stages and is actively supported and maintained. Suggestion for improvement are welcome.
+
+- Note possible future roadmap items.
+
+=head2 Motivation
+
+Provide motivation for writing the module here.
+
+#=head1 SEE ALSO
