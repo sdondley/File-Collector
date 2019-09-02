@@ -8,9 +8,10 @@ use Log::Log4perl::Shortcuts       qw(:all);
 use parent 'File::Collector::Base';
 
 sub new {
-  my ($class, $all) = @_;
+  my ($class, $all, $cselected) = @_;
 
-  bless { files => {}, iterator => [], all => $all, selected => '' }, $class;
+  bless { files => {}, iterator => [], all => $all,
+          selected => '', cselected => $cselected }, $class;
 }
 
 sub next {
@@ -21,7 +22,7 @@ sub next {
   }
   my $file               = shift @{$s->{iterator}};
   $s->{selected}         = $file;
-  $s->{all}{selected}    = $file->{full_path};
+  ${$s->{cselected}}     = $file->{full_path};
 }
 
 sub isa {
@@ -53,10 +54,7 @@ sub do {
   sub AUTOLOAD {
     my $self = shift;
     our $AUTOLOAD;
-    logd $AUTOLOAD;
     my ($method) = $AUTOLOAD =~ m/::([^:]+)$/;
-    logd ref $$self;
-    logd $method;
     $$self->$method(@_) while ($$self->next);
   }
 
