@@ -7,9 +7,7 @@ use Log::Log4perl::Shortcuts       qw(:all);
 
 sub print_blah_names {
   my $s = shift;
-  while ($s->next) {
-    print $s->selected->{short_path} . "\n\n";
-  }
+  print $s->selected->{short_path} . "\n\n";
 }
 
 
