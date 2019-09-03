@@ -14,7 +14,7 @@ $t0 = Benchmark->new;
 
 
 
-my $tests = 5; # keep on line 17 for ,i (increment and ,ii (decrement)
+my $tests = 4; # keep on line 17 for ,i (increment and ,ii (decrement)
 plan tests => $tests;
 
 # 1 - 7
