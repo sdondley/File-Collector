@@ -8,9 +8,9 @@ use Log::Log4perl::Shortcuts       qw(:all);
 use parent 'File::Collector::Base';
 
 sub new {
-  my ($class, $all, $cselected) = @_;
+  my ($class, $all, $cselected, $files) = @_;
 
-  bless { _files => {}, iterator => [], all => $all,
+  bless { _files => $files || {}, iterator => [], all => $all,
           selected => '', cselected => $cselected }, $class;
 }
 
@@ -62,5 +62,3 @@ sub do {
 
 1; # Magic true value
 # ABSTRACT: this is what the module does
-
-

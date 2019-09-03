@@ -19,6 +19,8 @@ sub AUTOLOAD {
   if (!$s->{_files}{"$2_files"}) { $s->_scroak("No such file category exists: '$2' at "); }
   else { return $s->{_files}{"$2_files"} if !$1; }
 
+
+
   if ($1 eq 'next_') {
     return $s->{_files}{"$2_files"}->next;
   }
@@ -28,7 +30,12 @@ sub AUTOLOAD {
   }
 
   if ($1 eq 'get_') {
-    return values %{$s->{_files}{"$2_files"}{_files}};
+    my $cat = $2;
+    my $class = ref($s) . '::Processor';
+    my $obj = $class->new($s->{_files}{all},
+              \($s->{selected}),
+              $s->{_files}{"${cat}_files"}{_files});
+    return $obj;
   }
 
   croak "No such method: $AUTOLOAD";
@@ -134,7 +141,6 @@ sub _init_processors {
   my ($s, @processors) = @_;
 
   my $class    = ref($s);
-  $class       =~ s/::(\w)+$//;
   my $it_class = $class . '::Processor';
 
   foreach my $it ( @processors ) {
@@ -240,4 +246,3 @@ sub _run_processes {
 
 1; # Magic true value
 # ABSTRACT: Collects files and sets up file Processors
-

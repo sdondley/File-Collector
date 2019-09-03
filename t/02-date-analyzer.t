@@ -31,10 +31,37 @@ plan tests => $tests;
  stdout_like { $da->some_files->do->print_short_names } qr/^dir2\/file\d\n[^\n]/ms,
    'prints first file with no double line break';
 
- is 9, $da->get_some_files, 'returns list of iles from a category';
+# is 9, $da->get_some_files, 'returns list of iles from a category';
 
  stdout_like { while ($da->next_some_file) { $da->print_short_name; } } qr/^file2$/ms,
    'next_ method works';
+
+# my @files = $da->get_files;
+# logd \@files;
+
+ my $file = $da->get_file('/Users/stevedondley/perl/modules/File-Collector/t/test_data/many_files/file1');
+ logd $file;
+
+ $da->list_files_long;
+
+
+  while ($da->next_some_file) {
+    $da->print_short_name;
+  }
+
+   my $it1 = $da->get_some_files;
+   while ( $it1->next ) {
+     # run C<Processor> methods and do other stuff to "good" files
+     print "outer: ";
+     $it1->print_blah_names;
+     my $it2 = $da->get_some_files;
+     while ( $it2->next ) {
+       print "inner: ";
+       $it2->print_blah_names;
+     }
+   }
+
+
 }
 
 my $t1 = Benchmark->new;

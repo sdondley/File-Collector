@@ -2,8 +2,10 @@
 
 This is the base class for custom C<Processor> classes. This class should
 contain methods for manipulating files and data contained in your C<Collector>
-object. To keep this class clean and small, consider reserving any
-heavy lifting for objects you have associated with the files. This will go a long way to keeping
+object. To keep this class clean and small, consider reserving any heavy lifting
+for objects associated with the files. You might also consider placing C<get>
+methods into this class for accessing data in the objects associated with the
+files.
 
 =head1 SYNOPSIS
 
@@ -25,9 +27,20 @@ heavy lifting for objects you have associated with the files. This will go a lon
     ...
   }
 
+  sub get_data {
+    my $s = shift;
+    return $s->get_obj_prop ( 'obj_name', 'some_values' );
+  }
+
 =head1 DESCRIPTION
 
-The C<Processor>
+The methods in the C<Processor> class are called from your custom C<Collector>
+class which should C<use> your custom C<Processor> class. Therefore, all methods
+described will be available to your C<Collector> class as well as your
+C<Processor> class.
+
+L<File::Collector::Base> class has several methods that will be useful for
+processing data contained in the objects associated with files in a collection.
 
 =method do()
 
@@ -40,13 +53,25 @@ C<Collector> classes. For each file found in the specified category, it will run
 the method in the C<Processor> class which is pecified by "run_method" in the
 example above.
 
-So for example, if you wanted to delete all the files classified as "bad" files, that might look something like this:
+So for example, if you wanted to delete all the files classified as "bad" files,
+that might look something like this:
 
   $collector->bad_files->do->delete;
 
+The C<delete> method in your C<Processor> will take care of deleting the file
+for you and might look somethink like this:
 
+  sub delete {
+    my $s = shift;
+    unlink $s->selected
+  }
 
-=method method2()
+Note that we use C<$s-E<gt>selected> to refer to the file currently selected by
+the C<Processor>'s iterator. See L<File::Collector::Base> for more details.
+
+=method next()
+
+Returns the next file in the iterator. 
 
 
 

@@ -30,11 +30,11 @@ plan tests => $tests;
     'creates an object';
 
   # 3
-  ok $fc->{files},
+  ok $fc->{_files},
     'has files property';
 
   # 4
-  ok $fc->{common_dir},
+  ok $fc->{_common_dir},
     'has common_dir property';
 
   # 5
