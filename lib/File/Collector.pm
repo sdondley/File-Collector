@@ -4,6 +4,7 @@ use strict; use warnings;
 use Cwd;
 use Carp;
 use File::Basename;
+use Role::Tiny::With;
 use Log::Log4perl::Shortcuts qw(:all);
 
 use parent 'File::Collector::Base';
@@ -19,19 +20,18 @@ sub AUTOLOAD {
   if (!$s->{_files}{"$2_files"}) { $s->_scroak("No such file category exists: '$2' at "); }
   else { return $s->{_files}{"$2_files"} if !$1; }
 
-
-
   if ($1 eq 'next_') {
     return $s->{_files}{"$2_files"}->next;
   }
 
   if ($1 eq 'isa_') {
-    return $s->{_files}{"$2_files"}->isa;
+    return $s->{_files}{"$2_files"}->isa($s->selected);
   }
 
   if ($1 eq 'get_') {
     my $cat = $2;
-    my $class = ref($s) . '::Processor';
+    my $class = $s->{_processor_map}{$cat};
+    logd $class;
     my $obj = $class->new($s->{_files}{all},
               \($s->{selected}),
               $s->{_files}{"${cat}_files"}{_files});
@@ -44,24 +44,39 @@ sub AUTOLOAD {
 sub new {
   my $class = shift;
 
-  # Check args
-  if (!@_ || (@_ == 1 && ref($_[0]) eq 'HASH')) {
-    croak ('No list of files or directories supplied to constructor. Aborting.');
+  my @resources;
+  my $user_opts = {};
+  my $classes;
+  foreach my $arg (@_) {
+    if (!ref $arg) {
+      push @resources, $arg;
+    } elsif (ref($arg) eq 'HASH') {
+      if (%$user_opts) {
+        croak ('Only one option hash allowed in constructor. Aborting.');
+      }
+      $user_opts = $arg;
+    } elsif (ref($arg) eq 'ARRAY') {
+      if ($classes) {
+        croak ('Only one class array allowed in constructor. Aborting.');
+      }
+      $classes = $arg;
+    }
   }
 
-  my @tmp = @_;
-  pop @tmp;
-  for my $r (@tmp) {
-    croak ('Option hash should be passed to constructor last. Aborting')
-      if (ref($r)) eq 'HASH';
+  if (!@resources) {
+    croak ('No list of resources passed to constructor. Aborting.');
+  }
+
+  if (!$classes) {
+    croak ('No Collector class array passed to constructor. Aborting.');
+  } else {
+    for my $r (@$classes) {
+      eval "require $r";
+    }
   }
 
   # get options hash
-  my $user_opts    = {};
   my $default_opts = { recurse => 1 };
-  if (ref $_[-1] eq 'HASH') {
-    $user_opts    = pop @_;
-  }
   my %opts = (%$default_opts, %$user_opts);
 
   my $s = bless {
@@ -69,11 +84,12 @@ sub new {
     _common_dir     => '',
     selected        => '',
     _options        => \%opts,
+    _classes        => $classes,
   }, $class;
 
   $s->{all} = $s->{_files}{all};
 
-  $s->add_resources(@_);
+  $s->add_resources(@resources);
   return $s;
 }
 
@@ -91,9 +107,9 @@ sub add_resources {
   $s->_init_processors;
   foreach my $file (@{$s->{_files}{new}}) {
     $s->{selected} = $file;
-    $s->_classify_file;
+    $s->_classify_all;
   }
-  $s->_run_processes;
+  $s->_run_all;
   undef $s->{selected};
   undef $s->{_files}{new};                 # clear the new_file array
 }
@@ -137,28 +153,51 @@ sub DESTROY {
 
 # private methods
 
+sub _classify_all {
+  my $s = shift;
+  my $classes = $s->{_classes};
+  foreach my $c ( @$classes ) {
+    my $role = Role::Tiny->apply_roles_to_object ($s, $c);
+    $role->_classify_file();
+  }
+}
+
+sub _run_all {
+  my $s = shift;
+  my $classes = $s->{_classes};
+  foreach my $c ( @$classes ) {
+    my $role = Role::Tiny->apply_roles_to_object ($s, $c);
+    $role->_run_processes;
+  }
+}
+
 sub _init_processors {
-  my ($s, @processors) = @_;
+  my $s = shift;
 
-  my $class    = ref($s);
-  my $it_class = $class . '::Processor';
-
-  foreach my $it ( @processors ) {
-    next if ($s->{_files}{"${it}_files"});    # don't overwrite existing processor
-    $s->{_files}{"${it}_files"} = $it_class->new($s->{_files}{all}, \($s->{selected}));
+  my $classes = $s->{_classes};
+  foreach my $c ( @$classes ) {
+    my @processors = $c->_init_processors if $c->can('_init_processors');
+    my $it_class = $c . '::Processor';
+    foreach my $it ( @processors ) {
+      next if ($s->{_files}{"${it}_files"});    # don't overwrite existing processor
+      $s->{_processor_map}{$it} = $it_class;
+      $s->{_files}{"${it}_files"} = $it_class->new($s->{_files}{all}, \($s->{selected}));
+    }
   }
 }
 
 sub _classify {
-  my ($s, $type) = @_;
-  my $file = $s->selected;
-  my $t = $type . '_files';
+  my ($s, @classes) = @_;
+  foreach my $type (@classes) {
+    my $t = $type . '_files';
+    my $file = $s->selected;
 
-  # die if bad args given
-  $s->_croak("No $type argument sent to _classify method. Aborting.") if !$type;
-  $s->_croak("No processor called $type exists. Aborting.") if !$s->{_files}{$t};
+    # die if bad args given
+    $s->_croak("No $type argument sent to _classify method. Aborting.") if !$type;
+    $s->_croak("No processor called $type exists. Aborting.") if !$s->{_files}{$t};
 
-  $s->{_files}{$t}->_add_file($file, $s->{_files}{all}{$file});
+    $s->{_files}{$t}->_add_file($file, $s->{_files}{all}{$file});
+  }
 }
 
 sub _generate_short_names {
@@ -238,11 +277,6 @@ sub _get_file_manifest {
 
 # fallback stub methods needed if not used by any subclasses
 
-sub _classify_file {
-}
-
-sub _run_processes {
-}
 
 1; # Magic true value
 # ABSTRACT: Collects files and sets up file Processors

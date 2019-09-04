@@ -22,11 +22,11 @@ plan tests => $tests;
   my $fc;
 
   # 1
-  throws_ok { $fc = File::Collector->new('blahblahksjdfkjwekjd'); }
+  throws_ok { $fc = File::Collector->new('blahblahksjdfkjwekjd', ['one', 'two']); }
     qr/does not exist/, 'rejects bad file or directory';
 
   # 2
-  lives_ok { $fc = File::Collector->new('t/test_data/single_file'); }
+  lives_ok { $fc = File::Collector->new('t/test_data/single_file', ['File::Collector::Date::Classifier']); }
     'creates an object';
 
   # 3
@@ -53,7 +53,7 @@ plan tests => $tests;
 
 # 8
 {
-  my $fc = File::Collector->new('t/test_data/nested_dirs', {recurse => 0});
+  my $fc = File::Collector->new('t/test_data/nested_dirs', ['File::Collector::Date::Classifier'], {recurse => 0});
 
   # 8
   is $fc->get_count, 1,
@@ -62,7 +62,7 @@ plan tests => $tests;
 
 # 9
 {
-  my $fc = File::Collector->new('t/test_data/nested_dirs');
+  my $fc = File::Collector->new('t/test_data/nested_dirs', ['File::Collector::Date::Classifier']);
 
   # 9
   is $fc->get_count, 2,
@@ -74,16 +74,16 @@ plan tests => $tests;
   throws_ok { my $fc = File::Collector->new(); }
     qr/No list/, 'dies with no constructor arguments';
 
-  throws_ok { my $fc = File::Collector->new({recurse => 0}, 't/test_data') } qr/Option hash/i,
-    'complains when options are not last';
+#  throws_ok { my $fc = File::Collector->new({recurse => 0}, 't/test_data') } qr/Option hash/i,
+#    'complains when options are not last';
 
-  throws_ok { my $fc = File::Collector->new({recurse => 0}) } qr/No list/i,
+  throws_ok { my $fc = File::Collector->new(['one', 'two'], {recurse => 0}) } qr/No list/i,
     'dies when no resources are passed';
 }
 
 # 13 - 14
 {
-  my $fc = File::Collector->new('t/test_data/many_files');
+  my $fc = File::Collector->new('t/test_data/many_files', ['File::Collector::Date::Classifier']);
   stdout_like { $fc->list_files } qr/Files found/,
     'Prints list of files found';
 

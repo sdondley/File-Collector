@@ -2,7 +2,7 @@
 use Test::Most;
 use Test::Output;
 use Log::Log4perl::Shortcuts qw(:all);
-use File::Collector::Date::Classifier;
+use File::Collector;
 diag( "Running my tests" );
 
 my $t0;
@@ -22,7 +22,7 @@ plan tests => $tests;
   my $da;
 
   # 1
- lives_ok { $da = File::Collector::Date::Classifier->new('t/test_data/many_files'); }
+ lives_ok { $da = File::Collector->new('t/test_data/many_files', ['File::Collector::Date::Classifier']); }
    'creates Date Classifier object';
 
  stdout_like { $da->some_files->do->print_blah_names } qr/^dir1\/file4$/ms,

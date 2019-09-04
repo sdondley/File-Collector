@@ -20,7 +20,8 @@ sub get_obj_prop {
   my $o            = $obj . '_obj';
   my $object       = $s->{all}{$file}{$o};
   if (! exists $object->{$attr} ) {
-    _scroak ("Non-existent $obj object attribute requested: '$prop'");
+    logd $attr;
+    $s->_scroak ("Non-existent $obj object attribute requested: '_$prop'");
   }
   my $value = $object->{$attr};
   if (ref $value eq 'ARRAY') {
@@ -90,12 +91,12 @@ sub obj_meth {
   if (! $obj->can($meth)) {
     _scroak ("Non-existent method on $obj object: '$meth'");
   }
-  logd \@_;
-  return $obj->$meth($s->short_name, @_);
+  return $obj->$meth($s->_short_name, @_);
 }
 
 sub selected {
-  (shift)->{selected}
+  my $s = shift;
+  $s->{selected};
 }
 
 sub has_obj {
