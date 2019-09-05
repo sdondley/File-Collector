@@ -31,7 +31,6 @@ sub AUTOLOAD {
   if ($1 eq 'get_') {
     my $cat = $2;
     my $class = $s->{_processor_map}{$cat};
-    logd $class;
     my $obj = $class->new($s->{_files}{all},
               \($s->{selected}),
               $s->{_files}{"${cat}_files"}{_files});
@@ -44,53 +43,58 @@ sub AUTOLOAD {
 sub new {
   my $class = shift;
 
-  my @resources;
-  my $user_opts = {};
-  my $classes;
-  foreach my $arg (@_) {
-    if (!ref $arg) {
-      push @resources, $arg;
-    } elsif (ref($arg) eq 'HASH') {
-      if (%$user_opts) {
-        croak ('Only one option hash allowed in constructor. Aborting.');
-      }
-      $user_opts = $arg;
-    } elsif (ref($arg) eq 'ARRAY') {
-      if ($classes) {
-        croak ('Only one class array allowed in constructor. Aborting.');
-      }
-      $classes = $arg;
-    }
-  }
-
-  if (!@resources) {
-    croak ('No list of resources passed to constructor. Aborting.');
-  }
-
-  if (!$classes) {
-    croak ('No Collector class array passed to constructor. Aborting.');
-  } else {
-    for my $r (@$classes) {
-      eval "require $r";
-    }
-  }
+  # process args
+  my ($user_opts, $classes, @resources) = _get_args(@_);
 
   # get options hash
   my $default_opts = { recurse => 1 };
   my %opts = (%$default_opts, %$user_opts);
 
+  # construct object
   my $s = bless {
     _files          => { all => {} },
     _common_dir     => '',
     selected        => '',
     _options        => \%opts,
     _classes        => $classes,
+    _roles          => undef,
+    all             => undef,
   }, $class;
 
+  # build roles
+  foreach my $class ( @$classes ) {
+    my $role = Role::Tiny->apply_roles_to_object ($s, $class);
+    push @{ $s->{_roles} }, $role;
+  }
+
+  # a bit of trickery to make Processor class code consistent with base class
   $s->{all} = $s->{_files}{all};
 
+  # add rersources and process files
   $s->add_resources(@resources);
+
   return $s;
+}
+
+sub _get_args {
+  my $user_opts = {};
+  my @resources;
+  my $classes;
+  foreach my $arg (@_) {
+    if (!ref $arg) {
+      push @resources, $arg;
+    } elsif (ref($arg) eq 'HASH') {
+      croak ('Only one option hash allowed in constructor. Aborting.') if %$user_opts;
+      $user_opts = $arg;
+    } elsif (ref($arg) eq 'ARRAY') {
+      die ('Only one class array allowed in constructor. Aborting.') if $classes;
+      $classes = $arg;
+    }
+  }
+  die('No list of resources passed to constructor. Aborting.') if ! @resources;
+  die('No Collector class array passed to constructor. Aborting.') if !$classes;
+
+  return ($user_opts, $classes, @resources);
 }
 
 sub add_resources {
@@ -104,7 +108,7 @@ sub add_resources {
   }
 
   $s->_generate_short_names;                    # calculate the short names
-  $s->_init_processors;
+  $s->_init_all_processors;
   foreach my $file (@{$s->{_files}{new}}) {
     $s->{selected} = $file;
     $s->_classify_all;
@@ -155,10 +159,9 @@ sub DESTROY {
 
 sub _classify_all {
   my $s = shift;
-  my $classes = $s->{_classes};
-  foreach my $c ( @$classes ) {
-    my $role = Role::Tiny->apply_roles_to_object ($s, $c);
-    $role->_classify_file();
+  foreach my $r ( @{ $s->{_roles} } ) {
+#    logd $r;
+    $r->_classify_file();
   }
 }
 
@@ -171,12 +174,11 @@ sub _run_all {
   }
 }
 
-sub _init_processors {
+sub _init_all_processors {
   my $s = shift;
 
-  my $classes = $s->{_classes};
-  foreach my $c ( @$classes ) {
-    my @processors = $c->_init_processors if $c->can('_init_processors');
+  foreach my $c ( @{ $s->{_classes} } ) {
+    my @processors = $c->_init_processors;
     my $it_class = $c . '::Processor';
     foreach my $it ( @processors ) {
       next if ($s->{_files}{"${it}_files"});    # don't overwrite existing processor
@@ -193,8 +195,8 @@ sub _classify {
     my $file = $s->selected;
 
     # die if bad args given
-    $s->_croak("No $type argument sent to _classify method. Aborting.") if !$type;
-    $s->_croak("No processor called $type exists. Aborting.") if !$s->{_files}{$t};
+    die ("No $type argument sent to _classify method. Aborting.") if !$type;
+    die ("No processor called $type exists. Aborting.") if !$s->{_files}{$t};
 
     $s->{_files}{$t}->_add_file($file, $s->{_files}{all}{$file});
   }
@@ -274,6 +276,7 @@ sub _get_file_manifest {
   }
 
 }
+
 
 # fallback stub methods needed if not used by any subclasses
 

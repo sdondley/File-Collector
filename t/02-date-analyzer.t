@@ -40,7 +40,6 @@ plan tests => $tests;
 # logd \@files;
 
  my $file = $da->get_file('/Users/stevedondley/perl/modules/File-Collector/t/test_data/many_files/file1');
- logd $file;
 
  $da->list_files_long;
 
