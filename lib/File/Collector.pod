@@ -179,7 +179,7 @@ The methods below are found in the C<File::Collector> class. Be sure to look at
 the L<File::Collector::Base> class for useful methods when iterating over files
 in a collection.
 
-=method new( 'dir', 'file', ..., \%opts  )
+=method new( 'dir', 'file', ..., [ 'My::Custom::Class::One', ... ], \%opts  )
 =method new( 'dir', 'file', ..., )
 
   my $collector = File::Collector::MyClassifier->new('my/directory', { recurse => 0 } );
@@ -227,8 +227,6 @@ Prints the full path names of each file in the collection, sorted alphabetically
 
 Same as C<list_files_long> but prints the files' paths relative to the top level
 directory shared by all the files in the collections.
-
-=method
 
 =head2 Private Collector Methods for Child Classes
 
