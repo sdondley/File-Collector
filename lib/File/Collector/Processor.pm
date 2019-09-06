@@ -5,7 +5,7 @@ use warnings;
 use Carp;
 use Log::Log4perl::Shortcuts       qw(:all);
 
-use parent 'File::Collector::Base';
+use parent 'File::Collector';
 
 sub new {
   my ($class, $all, $cselected, $files) = @_;
