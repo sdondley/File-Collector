@@ -4,7 +4,7 @@ File::Collector
 
 # VERSION
 
-version 0.012
+version 0.013
 
 # OVERVIEW
 
@@ -185,7 +185,7 @@ The methods below are found in the `File::Collector` class. Be sure to look at
 the [File::Collector::Base](https://metacpan.org/pod/File::Collector::Base) class for useful methods when iterating over files
 in a collection.
 
-## ''
+## 
 
 ### new( 'dir', 'file', ..., \[ 'My::Custom::Class::One', ... \], \\%opts )
 
@@ -288,11 +288,6 @@ Like the `_classify` method, this method is typically called from within the
 `_classify_file` method. It associates the object specified by `$object` to an
 arbitrary name, specified by `$object_name`, with the file currently getting
 processed.
-
-# Private Collector Methods for Child Classes
-
-The following methods, though private, are meant to be overridden by the child
-classes of `File::Collector` that you provide.
 
 # BUGS AND LIMITATIONS
 
