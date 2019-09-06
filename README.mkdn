@@ -4,7 +4,7 @@ File::Collector
 
 # VERSION
 
-version 0.009
+version 0.010
 
 # OVERVIEW
 
@@ -183,11 +183,11 @@ The methods below are found in the `File::Collector` class. Be sure to look at
 the [File::Collector::Base](https://metacpan.org/pod/File::Collector::Base) class for useful methods when iterating over files
 in a collection.
 
-### Collector Methods
+## Collector Methods
 
-#### new( 'dir', 'file', ..., \[ 'My::Custom::Class::One', ... \], \\%opts )
+### new( 'dir', 'file', ..., \[ 'My::Custom::Class::One', ... \], \\%opts )
 
-#### new( 'dir', 'file', ..., \[ 'My::Custom::Class::One', ... \] )
+### new( 'dir', 'file', ..., \[ 'My::Custom::Class::One', ... \] )
 
     my $collector = File::Collector::MyClassifier->new('my/directory', { recurse => 0 } );
 
@@ -201,36 +201,36 @@ your custom modules.
 and any data you have associated with the files. This object has serveral
 methods that can be used to inspect the object.
 
-#### add\_resources( 'dir', 'file' )
+### add\_resources( 'dir', 'file' )
 
     $collector->add_resources( 'file1', 'dir2', ... );
 
 Adds additional file resources to the collection and processes them. This method
 accepts no option hash.
 
-#### get\_count()
+### get\_count()
 
     $collector->get_count;
 
 Returns the total number of files in the collection.
 
-#### get\_files()
+### get\_files()
 
     my @all_files = $collector->get_files;
 
 Returns a list of the full path of each file in the collection.
 
-#### get\_file($file)
+### get\_file($file)
 
     my $file = $collector->get_files('/full/path/to/file.txt');
 
 Returns a reference of the data and objects associated with a file.
 
-#### list\_files\_long()
+### list\_files\_long()
 
 Prints the full path names of each file in the collection, sorted alphabetically, to STDOUT.
 
-#### list\_files()
+### list\_files()
 
 Same as `list_files_long` but prints the files' paths relative to the top level
 directory shared by all the files in the collections.
@@ -238,9 +238,9 @@ directory shared by all the files in the collections.
 The following methods, though private, are meant to be overridden by the child
 classes of `File::Collector` that you provide.
 
-### Private Collector Methods for Child Classes
+## Private Collector Methods for Child Classes
 
-#### \_init\_processors()
+### \_init\_processors()
 
     sub _init_processors {
       return qw ( 'category_1', 'category_2' );
@@ -251,7 +251,7 @@ Processor object to the `Collector` so that `Processor` methods found in your
 custom `Processor` class can be run on your files. This method is run once upon
 `Collector` object construction.
 
-#### \_classify\_file()
+### \_classify\_file()
 
     sub _classify_file {
       my $s = shift;
@@ -266,7 +266,7 @@ once for each file in the collection.
 See the [File::Collector::Base](https://metacpan.org/pod/File::Collector::Base) documentation for methods for accessing and
 associating information about the file which you can use inside of this method.
 
-#### \_run\_processes()
+### \_run\_processes()
 
     sub _run_processes {
       my $s = shift;
@@ -277,7 +277,7 @@ associating information about the file which you can use inside of this method.
 Make method calls associated with the various `Processor`s inside of the
 `_run_processes` method.
 
-#### \_classify( $category\_name )
+### \_classify( $category\_name )
 
 This method is typically called from within the `_classify_file` method. It
 adds the file currently getting pocessed to a collection of `$category_name`
@@ -285,7 +285,7 @@ files contained within a `Processor` object which, in turn, belongs to the
 `Collector` object.  The `$category_name` must match one of the processor
 names provided by the `_init_processor` methods.
 
-#### \_add\_obj( $object\_name, $object )
+### \_add\_obj( $object\_name, $object )
 
 Like the `_classify` method, this method is typically called from within the
 `_classify_file` method. It associates the object specified by `$object` to an
