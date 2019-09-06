@@ -15,5 +15,4 @@ sub _classify_file {
   $s->_classify('some');
 }
 
-
 1;
