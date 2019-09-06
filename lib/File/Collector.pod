@@ -173,12 +173,6 @@ optional option hash.
 
 =head1 DESCRIPTION
 
-=head2 Collector Methods
-
-The methods below are found in the C<File::Collector> class. Be sure to look at
-the L<File::Collector::Base> class for useful methods when iterating over files
-in a collection.
-
 =regmethod new( 'dir', 'file', ..., [ 'My::Custom::Class::One', ... ], \%opts )
 
 =regmethod new( 'dir', 'file', ..., [ 'My::Custom::Class::One', ... ] )
@@ -228,7 +222,6 @@ Prints the full path names of each file in the collection, sorted alphabetically
 
 Same as C<list_files_long> but prints the files' paths relative to the top level
 directory shared by all the files in the collections.
-
 
 =primethod _init_processors()
 
