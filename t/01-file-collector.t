@@ -14,7 +14,7 @@ $t0 = Benchmark->new;
 
 
 
-my $tests = 14; # keep on line 17 for ,i (increment and ,ii (decrement)
+my $tests = 13; # keep on line 17 for ,i (increment and ,ii (decrement)
 plan tests => $tests;
 
 # 1 - 7
@@ -22,7 +22,7 @@ plan tests => $tests;
   my $fc;
 
   # 1
-  throws_ok { $fc = File::Collector->new('blahblahksjdfkjwekjd', ['one', 'two']); }
+  throws_ok { $fc = File::Collector->new('blahblahksjdfkjwekjd', ['File::Collector::Date::Classifier']); }
     qr/does not exist/, 'rejects bad file or directory';
 
   # 2
