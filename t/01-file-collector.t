@@ -3,6 +3,7 @@ use Test::Most;
 use Test::Output;
 use Log::Log4perl::Shortcuts qw(:all);
 use File::Collector;
+use lib 't/TestMods';
 diag( "Running my tests" );
 
 my $t0;
@@ -22,11 +23,11 @@ plan tests => $tests;
   my $fc;
 
   # 1
-  throws_ok { $fc = File::Collector->new('blahblahksjdfkjwekjd', ['File::Collector::Date::Classifier']); }
+  throws_ok { $fc = File::Collector->new('blahblahksjdfkjwekjd'); }
     qr/does not exist/, 'rejects bad file or directory';
 
   # 2
-  lives_ok { $fc = File::Collector->new('t/test_data/single_file', ['File::Collector::Date::Classifier']); }
+  lives_ok { $fc = File::Collector->new('t/test_data/single_file', ['Test::Classifier']); }
     'creates an object';
 
   # 3
@@ -53,7 +54,7 @@ plan tests => $tests;
 
 # 8
 {
-  my $fc = File::Collector->new('t/test_data/nested_dirs', ['File::Collector::Date::Classifier'], {recurse => 0});
+  my $fc = File::Collector->new('t/test_data/nested_dirs', ['Test::Classifier'], {recurse => 0});
 
   # 8
   is $fc->get_count, 1,
@@ -62,7 +63,7 @@ plan tests => $tests;
 
 # 9
 {
-  my $fc = File::Collector->new('t/test_data/nested_dirs', ['File::Collector::Date::Classifier']);
+  my $fc = File::Collector->new('t/test_data/nested_dirs', ['Test::Classifier']);
 
   # 9
   is $fc->get_count, 2,
@@ -83,7 +84,7 @@ plan tests => $tests;
 
 # 13 - 14
 {
-  my $fc = File::Collector->new('t/test_data/many_files', ['File::Collector::Date::Classifier']);
+  my $fc = File::Collector->new('t/test_data/many_files', ['Test::Classifier']);
   stdout_like { $fc->list_files } qr/Files found/,
     'Prints list of files found';
 
