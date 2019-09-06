@@ -4,7 +4,7 @@ File::Collector
 
 # VERSION
 
-version 0.007
+version 0.008
 
 # OVERVIEW
 
@@ -179,16 +179,15 @@ optional option hash.
 
 # DESCRIPTION
 
-## Regular Collector Methods
-
 The methods below are found in the `File::Collector` class. Be sure to look at
 the [File::Collector::Base](https://metacpan.org/pod/File::Collector::Base) class for useful methods when iterating over files
 in a collection.
 
-# METHODS
+# Collector Methods
 
-#### new( 'dir', 'file', ..., \[ 'My::Custom::Class::One', ... \], \\%opts  )
-=method new( 'dir', 'file', ..., )
+#### new( 'dir', 'file', ..., \[ 'My::Custom::Class::One', ... \], \\%opts )
+
+#### new( 'dir', 'file', ..., \[ 'My::Custom::Class::One', ... \] )
 
     my $collector = File::Collector::MyClassifier->new('my/directory', { recurse => 0 } );
 
@@ -235,6 +234,8 @@ Prints the full path names of each file in the collection, sorted alphabetically
 
 Same as `list_files_long` but prints the files' paths relative to the top level
 directory shared by all the files in the collections.
+
+# Private Collector Methods for Child Classes
 
 #### \_init\_processors( @\_, @your\_custom\_file\_categories )
 
