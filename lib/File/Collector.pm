@@ -92,7 +92,7 @@ sub _get_args {
     }
   }
   die('No list of resources passed to constructor. Aborting.') if ! @resources;
-  die('No Collector class array passed to constructor. Aborting.') if !$classes;
+  #die('No Collector class array passed to constructor. Aborting.') if !$classes;
 
   return ($user_opts, $classes, @resources);
 }
@@ -161,7 +161,7 @@ sub _classify_all {
   my $s = shift;
   foreach my $r ( @{ $s->{_roles} } ) {
 #    logd $r;
-    $r->_classify_file();
+    $r->_classify_file() if $r->can('_classify_file');;
   }
 }
 
@@ -170,7 +170,7 @@ sub _run_all {
   my $classes = $s->{_classes};
   foreach my $c ( @$classes ) {
     my $role = Role::Tiny->apply_roles_to_object ($s, $c);
-    $role->_run_processes;
+    $role->_run_processes if $role->can('_run_processes');;
   }
 }
 
@@ -178,7 +178,7 @@ sub _init_all_processors {
   my $s = shift;
 
   foreach my $c ( @{ $s->{_classes} } ) {
-    my @processors = $c->_init_processors;
+    my @processors = $c->_init_processors if $c->can('_init_processors');
     my $it_class = $c . '::Processor';
     foreach my $it ( @processors ) {
       next if ($s->{_files}{"${it}_files"});    # don't overwrite existing processor
@@ -277,9 +277,147 @@ sub _get_file_manifest {
 
 }
 
+# From old File::Collector::Base file
 
-# fallback stub methods needed if not used by any subclasses
+sub get_obj_prop {
+  my ($s, $obj, $prop) = @_;
 
+  if (!$prop || !$obj) {
+    _scroak ("Missing arguments to get_obj_prop method");
+  }
+
+  my $file         = ref ($s->selected) eq 'HASH'
+                     ? $s->selected->{full_path}
+                     : $s->selected;
+  my $attr         = "_$prop";
+  my $o            = $obj . '_obj';
+  my $object       = $s->{all}{$file}{$o};
+  if (! exists $object->{$attr} ) {
+    logd $attr;
+    $s->_scroak ("Non-existent $obj object attribute requested: '_$prop'");
+  }
+  my $value = $object->{$attr};
+  if (ref $value eq 'ARRAY') {
+    return @$value;
+  } else {
+    return $value;
+  }
+}
+
+sub get_obj {
+  my ($s, $obj) = @_;
+
+  if (!$obj) {
+    _scroak ("Missing arguments to get_obj method");
+  }
+
+  my $file = ref ($s->selected) eq 'HASH'
+             ? $s->selected->{full_path}
+             : $s->selected;
+  my $o    = $obj . '_obj';
+
+  return $s->{all}{$file}{$o};
+}
+
+sub set_obj_prop {
+  my ($s, $obj, $prop, $val)  = @_;
+
+  if (!$prop || !$obj) {
+    $s->_scroak ("Missing arguments to set_obj_prop method");
+  }
+
+  my $file = $s->selected;
+
+  my $o      = $obj . '_obj';
+  my $object = $s->{all}{$file}{$o};
+  my $attr   = "_$prop";
+  if (! exists $object->{$attr} ) {
+    $s->_scroak ("Non-existent $obj object attribute requested: '$prop'");
+  }
+
+  $object->{$attr} = $val;
+}
+
+sub get_filename {
+  my $s = shift;
+  my $file = $s->selected;
+
+  return $s->{all}{$file}{filename};
+}
+
+sub obj_meth {
+  # Keep these args shifted individually
+  my $s    = shift;
+  my $obj  = shift;
+  my $meth = shift;
+  my $file = ref ($s->selected) eq 'HASH'
+             ? $s->selected->{full_path}
+             : $s->selected;
+
+  if (!$obj || !$meth) {
+    _scroak ("Missing arguments to obj_meth method");
+  }
+
+  my $o            = $obj . '_obj';
+  $obj             = $s->{all}{$file}{$o};
+
+  if (! $obj->can($meth)) {
+    _scroak ("Non-existent method on $obj object: '$meth'");
+  }
+  return $obj->$meth($s->_short_name, @_);
+}
+
+sub selected {
+  my $s = shift;
+  $s->{selected};
+}
+
+sub has_obj {
+  my ($s, $type) = @_;
+
+  if (!$type) {
+    _scroak ("Missing argument to has method");
+  }
+
+  my $to   = "${type}_obj";
+  my $file = ref ($s->selected) eq 'HASH'
+             ? $s->selected->{full_path}
+             : $s->selected;
+  return defined $s->{all}{$file}{$to};
+}
+
+sub attr_defined {
+  my $s = shift;
+  my $obj = shift;
+  my $attr = shift;
+  return defined $s->selected->{"${obj}_obj"}->{"_${attr}"};
+}
+
+sub print_short_name {
+  my $s = shift;
+
+  $s->_scroak ("The 'print_short_name' method does not accept methods") if @_;
+  print $s->_short_name . "\n";
+}
+
+sub _short_name {
+  my $s    = shift;
+  my $file = ref ($s->selected) eq 'HASH'
+             ? $s->selected->{full_path}
+             : $s->selected;
+  $s->{all}{$file}{short_path};
+}
+
+sub _exists {
+  my $s = shift;
+  $s->_scroak("'$_[0]' does not exist, aborting call from: ") if ! -e $_[0];
+}
+
+sub _scroak {
+  my $s = shift;
+  my $msg = shift;
+  croak($msg . ' ' . (fileparse((caller(1))[1]))[0] . ', line ' . (caller(1))[2] . "\n");
+}
 
 1; # Magic true value
 # ABSTRACT: Collects files and sets up file Processors
