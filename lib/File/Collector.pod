@@ -33,7 +33,7 @@ C<Collector> classes, one for each stage of your file processing. Next, you
 create C<Processor> classes, one for each of your C<Collector> classes. Finally,
 you write a simple script to actually do the processing.
 
-# Step 1: Create the C<Collector> classes
+B<Step 1: Create the C<Collector> classes>
 
   package File::Collector::YourCollector;
   use strict; use warnings;
@@ -107,7 +107,7 @@ you write a simple script to actually do the processing.
     $s->bad_files->do->move;
   }
 
-Step #2: Create your C<Processor> classes.
+B<Step 2: Create your C<Processor> classes.>
 
   # Your C<Processor> class must have the same package name as the C<Collector>
   # class with C<::Processor> tacked on to the end.
@@ -135,26 +135,28 @@ Step #2: Create your C<Processor> classes.
     ...
   }
 
+B<Step 3: Construction the Collector>
+
 Once your classes have been created, you can run all of your collectors and
 processors simply by constructing a C<Collector> object.
 
 The constructor takes three types of arguments: a list of the files and/or
 directories you want to collect; an array of the names of the C<Collector>
 classes you wish to use in the order you wish to employ them; and finally, an
-optional option hash.
+option hash, which is optional.
 
    my $collector = File::Collector::YourClassifier->new(
      # The first arguments are a list of resources to be added
-     'my/dir',
+     'my/dir', 'a_file.txt'
 
      # The second argument is an array of C<Collector> class names in the order
      # you want them to run
      [ 'File::Collector::First', 'File::Collector::YourCollector'],
 
-     # An optional hash argument for options can be supplied
+     # Finally, an optional hash argument for options can be supplied
      { recurse => 0 });
 
-   # The C<$collector> object has methods you can call.
+   # The C<$collector> object has some useful methods:
    $collector->get_count; # returns total number of files in the collection
 
    # Convenience methods with a little under-the-hood magic make it painless to
@@ -163,8 +165,7 @@ optional option hash.
      $collector->print_short_name;
    }
 
-   # Iterator objects, which are really the same thing as C<Processor> objects,
-   # can be easily generated.
+   # Iterators can be easily created from C<Processor> objects:
    my $iterator = $s->get_good_files;
    while ( $iterator->next ) {
      # run C<Processor> methods and do other stuff to "good" files
@@ -229,10 +230,9 @@ directory shared by all the files in the collections.
     return qw ( 'category_1', 'category_2' );
   }
 
-Adds categories for your Collector class. Internally, this method adds a new
-Processor object to the C<Collector> so that C<Processor> methods found in your
-custom C<Processor> class can be run on your files. This method is run once upon
-C<Collector> object construction.
+Creates new file categories. Internally, this method adds a new Processor
+object to the C<Collector> for each category added so that C<Processor> methods
+from custom C<Processor> classes can be run on individual categories of files.
 
 =primethod _classify_file()
 
@@ -242,12 +242,9 @@ C<Collector> object construction.
     # File classifying and analysis logic goes here
   }
 
-Use this method to classify your files and associate objects with your files
-using the methods provided by the C<Collector> class. This method is run
-once for each file in the collection.
-
-See the L<File::Collector::Base> documentation for methods for accessing and
-associating information about the file which you can use inside of this method.
+Use this method to classify files and to associate objects with your files
+using the methods provided by the C<Collector> class. This method is run once
+for each file in the collection.
 
 =primethod _run_processes()
 
@@ -257,8 +254,7 @@ associating information about the file which you can use inside of this method.
     # Processor method calls go here
   }
 
-Make method calls associated with the various C<Processor>s inside of the
-C<_run_processes> method.
+In this method, you should place various calls to C<Processor>s methods.
 
 =primethod _classify( $category_name )
 
@@ -275,10 +271,43 @@ C<_classify_file> method. It associates the object specified by C<$object> to an
 arbitrary name, specified by C<$object_name>, with the file currently getting
 processed.
 
-=head1 Private Methods
+=itmethod get_obj_prop( $obj_name, $property_name )
 
-The following methods, though private, are meant to be overridden by the child
-classes of C<File::Collector> that you provide.
+Returns the contents of an object's property.
+
+=itmethod get_obj( $obj_name )
+
+Returns an object associated with a file.
+
+=itmethod set_obj_prop( $obj_name, $property_name, $value )
+
+Sets an object's property.
+
+=itmethod obj_meth( $obj_name, $method_name, $method_args );
+
+Runs the C<$method_name> method on the object specified in C<$obj_name>.
+Arguments are passed via C<$method_args>.
+
+=itmethod get_filename()
+
+Retrieves the name of file being processed without the path.
+
+=itmethod selected()
+
+Returns the full path and file name of the file being processed.
+
+=itmethod has_obj( $obj_name );
+
+Returns a boolean value reflecting the existence of the obj in C<$obj_name>.
+
+=itmethod attr_defined( $obj_name, $attr_name )
+
+Returns a boolean value reflecting if the atrribute specified by C<$attr_name> is defined in the C<$obj_name> object.
+
+=itmethod print_short_name()
+
+Returns a shortened path, relative to all the files in the entire collection,
+and the file name of the file being processed.
 
 =head1 CONFIGURATION AND ENVIRONMENT
 
