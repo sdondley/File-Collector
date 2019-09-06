@@ -173,14 +173,13 @@ optional option hash.
 
 =head1 DESCRIPTION
 
-=head2 Regular Collector Methods
-
 The methods below are found in the C<File::Collector> class. Be sure to look at
 the L<File::Collector::Base> class for useful methods when iterating over files
 in a collection.
 
-=method new( 'dir', 'file', ..., [ 'My::Custom::Class::One', ... ], \%opts  )
-=method new( 'dir', 'file', ..., )
+=regmethod new( 'dir', 'file', ..., [ 'My::Custom::Class::One', ... ], \%opts )
+
+=regmethod new( 'dir', 'file', ..., [ 'My::Custom::Class::One', ... ] )
 
   my $collector = File::Collector::MyClassifier->new('my/directory', { recurse => 0 } );
 
@@ -194,46 +193,46 @@ C<new> returns an object which contains all the files, their processing classes,
 and any data you have associated with the files. This object has serveral
 methods that can be used to inspect the object.
 
-=method add_resources( 'dir', 'file' )
+=regmethod add_resources( 'dir', 'file' )
 
   $collector->add_resources( 'file1', 'dir2', ... );
 
 Adds additional file resources to the collection and processes them. This method
 accepts no option hash.
 
-=method get_count()
+=regmethod get_count()
 
   $collector->get_count;
 
 Returns the total number of files in the collection.
 
-=method get_files()
+=regmethod get_files()
 
   my @all_files = $collector->get_files;
 
 Returns a list of the full path of each file in the collection.
 
-=method get_file($file)
+=regmethod get_file($file)
 
   my $file = $collector->get_files('/full/path/to/file.txt');
 
 Returns has reference of the data an objects associated with a file.
 
-=method list_files_long()
+=regmethod list_files_long()
 
 Prints the full path names of each file in the collection, sorted alphabetically, to STDOUT.
 
-=method list_files()
+=regmethod list_files()
 
 Same as C<list_files_long> but prints the files' paths relative to the top level
 directory shared by all the files in the collections.
 
-=head2 Private Collector Methods for Child Classes HI!
+=head2 Private Collector Methods for Child Classes
 
 The following methods, though private, are meant to be overridden by the child
 classes of C<File::Collector> that you provide.
 
-=method _init_processors( @_, @your_custom_file_categories )
+=primethod _init_processors( @_, @your_custom_file_categories )
 
   sub _init_processors {
     return qw ( 'category_1', 'category_2' );
@@ -244,7 +243,7 @@ Processor object to the C<Collector> so that C<Processor> methods found in your
 custom C<Processor> class can be run on your files. This method is run once upon
 C<Collector> object construction.
 
-=method _classify_file()
+=primethod _classify_file()
 
   sub _classify_file {
     my $s = shift;
@@ -259,7 +258,7 @@ once for each file in the collection.
 See the L<File::Collector::Base> documentation for methods for accessing and
 associating information about the file which you can use inside of this method.
 
-=method _classify( $category_name )
+=primethod _classify( $category_name )
 
 This method is typically called from within the C<_classify_file> method. It
 adds the file currently getting pocessed to a collection of C<$category_name>
@@ -267,14 +266,14 @@ files contained within a C<Processor> object which, in turn, belongs to the
 C<Collector> object.  The C<$category_name> must match one of the processor
 names provided by the C<_init_processor> methods.
 
-=method _add_obj( $object_name, $object )
+=primethod _add_obj( $object_name, $object )
 
 Like the C<_classify> method, this method is typically called from within the
 C<_classify_file> method. It associates the object specified by C<$object> to an
 arbitrary name, specified by C<$object_name>, with the file currently getting
 processed.
 
-=method _run_processes()
+=primethod _run_processes()
 
   sub _run_processes {
     my $s = shift;
