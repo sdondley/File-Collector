@@ -1,4 +1,6 @@
-Revision history for File-Collector
+Revision history for {{$dist->name}}
+
+{{$NEXT}}
 
 0.013     2019-09-06 11:45:14-04:00 America/New_York
 
