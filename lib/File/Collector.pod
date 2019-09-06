@@ -216,7 +216,7 @@ Returns a list of the full path of each file in the collection.
 
   my $file = $collector->get_files('/full/path/to/file.txt');
 
-Returns has reference of the data an objects associated with a file.
+Returns a reference of the data and objects associated with a file.
 
 =regmethod list_files_long()
 
@@ -227,12 +227,10 @@ Prints the full path names of each file in the collection, sorted alphabetically
 Same as C<list_files_long> but prints the files' paths relative to the top level
 directory shared by all the files in the collections.
 
-=head2 Private Collector Methods for Child Classes
-
 The following methods, though private, are meant to be overridden by the child
 classes of C<File::Collector> that you provide.
 
-=primethod _init_processors( @_, @your_custom_file_categories )
+=primethod _init_processors()
 
   sub _init_processors {
     return qw ( 'category_1', 'category_2' );
@@ -258,6 +256,17 @@ once for each file in the collection.
 See the L<File::Collector::Base> documentation for methods for accessing and
 associating information about the file which you can use inside of this method.
 
+=primethod _run_processes()
+
+  sub _run_processes {
+    my $s = shift;
+
+    # Processor method calls go here
+  }
+
+Make method calls associated with the various C<Processor>s inside of the
+C<_run_processes> method.
+
 =primethod _classify( $category_name )
 
 This method is typically called from within the C<_classify_file> method. It
@@ -273,16 +282,6 @@ C<_classify_file> method. It associates the object specified by C<$object> to an
 arbitrary name, specified by C<$object_name>, with the file currently getting
 processed.
 
-=primethod _run_processes()
-
-  sub _run_processes {
-    my $s = shift;
-
-    # Processor method calls go here
-  }
-
-Make method calls associated with the various C<Processor>s inside of the
-C<_run_processes> method.
 
 =head1 CONFIGURATION AND ENVIRONMENT
 
