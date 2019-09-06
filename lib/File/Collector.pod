@@ -229,7 +229,7 @@ Prints the full path names of each file in the collection, sorted alphabetically
 Same as C<list_files_long> but prints the files' paths relative to the top level
 directory shared by all the files in the collections.
 
-=head1 Private Collector Methods for Child Classes
+=head1 Private Methods
 
 The following methods, though private, are meant to be overridden by the child
 classes of C<File::Collector> that you provide.
