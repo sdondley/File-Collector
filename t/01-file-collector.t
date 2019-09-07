@@ -1,7 +1,6 @@
 #/usr/bin/env perl
 use Test::Most;
 use Test::Output;
-use Log::Log4perl::Shortcuts qw(:all);
 use File::Collector;
 use lib 't/TestMods';
 diag( "Running my tests" );

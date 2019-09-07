@@ -3,7 +3,6 @@ use strict;
 use warnings;
 
 use Carp;
-use Log::Log4perl::Shortcuts       qw(:all);
 
 use parent 'File::Collector';
 

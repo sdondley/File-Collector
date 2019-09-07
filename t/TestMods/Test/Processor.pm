@@ -2,7 +2,6 @@ package Test::Classifier::Processor ;
 use strict;
 use warnings;
 
-use Log::Log4perl::Shortcuts qw(:all);
 use parent 'File::Collector::Processor';
 
 sub print_blah_names {
