@@ -4,6 +4,8 @@ Revision history for {{$dist->name}}
 
 0.024     2019-09-07 16:20:02-04:00 America/New_York
   - improve abstracts for base modules
+  - make modules compatible with older versions of perl
+  - add min. perl version to dist.ini
 
 0.023     2019-09-07 16:15:19-04:00 America/New_York
   - fix spelling error in docs
