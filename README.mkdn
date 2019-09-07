@@ -1,10 +1,10 @@
 # NAME
 
-File::Collector - Collects files and sets up file Processors
+File::Collector - Base class for custom File::Collector classes for classifying files and calling File::Collector::Processor methods for processing files
 
 # VERSION
 
-version 0.024
+version 0.025
 
 # OVERVIEW
 
