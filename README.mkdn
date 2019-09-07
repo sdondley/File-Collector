@@ -1,10 +1,10 @@
 # NAME
 
-File::Collector
+File::Collector - Collects files and sets up file Processors
 
 # VERSION
 
-version 0.019
+version 0.020
 
 # OVERVIEW
 
@@ -366,7 +366,45 @@ Returns a boolean value reflecting if the atrribute specified by `$attr_name` is
 ### print\_short\_name()
 
 Returns a shortened path, relative to all the files in the entire collection,
-and the file name of the file being processed.
+and the file name of the file being processed or in an iterator.
+
+# REQUIRES
+
+- [Carp](https://metacpan.org/pod/Carp)
+- [Cwd](https://metacpan.org/pod/Cwd)
+- [File::Basename](https://metacpan.org/pod/File::Basename)
+- [Role::Tiny::With](https://metacpan.org/pod/Role::Tiny::With)
+- [strict](https://metacpan.org/pod/strict)
+- [warnings](https://metacpan.org/pod/warnings)
+
+# SUPPORT
+
+## Perldoc
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc File::Collector
+
+## Websites
+
+The following websites have more information about this module, and may be of help to you. As always,
+in addition to those websites please use your favorite search engine to discover more resources.
+
+- MetaCPAN
+
+    A modern, open-source CPAN search engine, useful to view POD in HTML format.
+
+    [https://metacpan.org/release/File-Collector](https://metacpan.org/release/File-Collector)
+
+## Source Code
+
+The code is open to the world, and available for you to hack on. Please feel free to browse it and play
+with it, or whatever. If you want to contribute patches, please send me a diff or prod me to pull
+from your repository :)
+
+[https://github.com/sdondley/File-Collector](https://github.com/sdondley/File-Collector)
+
+    git clone git://github.com/sdondley/File-Collector.git
 
 # BUGS AND LIMITATIONS
 
@@ -378,6 +416,8 @@ web interface at [https://github.com/sdondley/File-Collector/issues](https://git
 See perlmodinstall for information and options on installing Perl modules.
 
 # SEE ALSO
+
+[File::Collector::Processor](https://metacpan.org/pod/File::Collector::Processor)
 
 # AUTHOR
 
