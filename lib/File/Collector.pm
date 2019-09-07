@@ -5,7 +5,6 @@ use Carp;
 use File::Spec;
 use File::Basename;
 use Role::Tiny::With;
-use Log::Log4perl::Shortcuts qw(:all);
 
 # public methods
 
