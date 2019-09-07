@@ -4,7 +4,7 @@ File::Collector - Collects files and sets up file Processors
 
 # VERSION
 
-version 0.023
+version 0.024
 
 # OVERVIEW
 
@@ -425,7 +425,7 @@ Steve Dondley <s@dondley.com>
 # Special Thanks
 
 Thanks to all the generous monks at the [PerlMonks](https://PerlMonks.org)
-community for patiently answering my (sometimes assenine) questions. A very
+community for patiently answering my (sometimes asinine) questions. A very
 special mention goes to [jcb](https://www.perlmonks.org/?node_id=1149436) whose
 advice was invaluable to improving the quality of this module. Another shout out
 to [Hippo](https://www.perlmonks.org/?node=hippo) for the suggesting
