@@ -1,4 +1,5 @@
 #/usr/bin/env perl
+use Cwd;
 use Test::Most;
 use Test::Output;
 use Log::Log4perl::Shortcuts qw(:all);
@@ -33,7 +34,7 @@ plan tests => $tests;
  stdout_like { while ($da->next_some_file) { $da->print_short_name; } } qr/^file2$/ms,
    'next_ method works';
 
- my $file = $da->get_file('/Users/stevedondley/perl/modules/File-Collector/t/test_data/many_files/file1');
+ my $file = $da->get_file(cwd() . '/t/test_data/many_files/file1');
  is ref ($file), 'HASH',
    'gets hash of file data';
 
