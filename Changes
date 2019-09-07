@@ -1,6 +1,6 @@
-Revision history for {{$dist->name}}
+Revision history for File-Collector
 
-{{$NEXT}}
+0.027     2019-09-07 19:45:17-04:00 America/New_York
 
 0.026     2019-09-07 19:35:38-04:00 America/New_York
   - remove share directory from release
