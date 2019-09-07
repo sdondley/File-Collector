@@ -23,9 +23,10 @@ sub next {
   my $file               = shift @{$s->{iterator}};
   $s->{selected}         = $file;
   ${$s->{cselected}}     = $file->{full_path};
+  return $s->{selected};
 }
 
-sub isa {
+sub _isa {
   my $s    = shift;
   my $file = shift;
   defined $s->{_files}{$file};
@@ -34,11 +35,6 @@ sub isa {
 sub _add_file {
   my ($s, $file, $data) = @_;
   $s->{_files}{$file}    = $data; # add the file's data to processor
-}
-
-sub print_short_names {
-  my $s = shift;
-  print $s->selected->{short_path} . "\n";
 }
 
 sub do {
