@@ -7,8 +7,6 @@ use File::Basename;
 use Role::Tiny::With;
 use Log::Log4perl::Shortcuts qw(:all);
 
-use parent 'File::Collector::Base';
-
 # public methods
 
 sub AUTOLOAD {
@@ -25,7 +23,7 @@ sub AUTOLOAD {
   }
 
   if ($1 eq 'isa_') {
-    return $s->{_files}{"$2_files"}->isa($s->selected);
+    return $s->{_files}{"$2_files"}->_isa($s->selected);
   }
 
   if ($1 eq 'get_') {
@@ -74,27 +72,6 @@ sub new {
   $s->add_resources(@resources);
 
   return $s;
-}
-
-sub _get_args {
-  my $user_opts = {};
-  my @resources;
-  my $classes;
-  foreach my $arg (@_) {
-    if (!ref $arg) {
-      push @resources, $arg;
-    } elsif (ref($arg) eq 'HASH') {
-      croak ('Only one option hash allowed in constructor. Aborting.') if %$user_opts;
-      $user_opts = $arg;
-    } elsif (ref($arg) eq 'ARRAY') {
-      die ('Only one class array allowed in constructor. Aborting.') if $classes;
-      $classes = $arg;
-    }
-  }
-  die('No list of resources passed to constructor. Aborting.') if ! @resources;
-  #die('No Collector class array passed to constructor. Aborting.') if !$classes;
-
-  return ($user_opts, $classes, @resources);
 }
 
 sub add_resources {
@@ -155,38 +132,7 @@ sub list_files {
 sub DESTROY {
 }
 
-# private methods
-
-sub _classify_all {
-  my $s = shift;
-  foreach my $r ( @{ $s->{_roles} } ) {
-#    logd $r;
-    $r->_classify_file() if $r->can('_classify_file');;
-  }
-}
-
-sub _run_all {
-  my $s = shift;
-  my $classes = $s->{_classes};
-  foreach my $c ( @$classes ) {
-    my $role = Role::Tiny->apply_roles_to_object ($s, $c);
-    $role->_run_processes if $role->can('_run_processes');;
-  }
-}
-
-sub _init_all_processors {
-  my $s = shift;
-
-  foreach my $c ( @{ $s->{_classes} } ) {
-    my @processors = $c->_init_processors if $c->can('_init_processors');
-    my $it_class = $c . '::Processor';
-    foreach my $it ( @processors ) {
-      next if ($s->{_files}{"${it}_files"});    # don't overwrite existing processor
-      $s->{_processor_map}{$it} = $it_class;
-      $s->{_files}{"${it}_files"} = $it_class->new($s->{_files}{all}, \($s->{selected}));
-    }
-  }
-}
+# private methods meant for used by subclasses
 
 sub _classify {
   my ($s, @classes) = @_;
@@ -202,51 +148,6 @@ sub _classify {
   }
 }
 
-sub _generate_short_names {
-  my $s = shift;
-
-  my @files                         = $s->get_files;
-  my $file                          = pop @files;
-  my @comps                         = split /\//, $file;
-  my ($new_string, $longest_string) = '';
-  foreach my $cfile (@files) {
-    my @ccomps = split /\//, $cfile;
-    my $lc     = 0;
-
-    foreach my $comp (@ccomps) {
-      if (defined $comps[$lc] && $ccomps[$lc] eq $comps[$lc]) {
-        $new_string   .= $ccomps[$lc++] . '/';
-        next;
-      }
-      $longest_string = $new_string;
-      @comps          = split /\//, $new_string;
-      $new_string     = '';
-      last;
-    }
-  }
-
-  $s->{_common_dir} = $longest_string || (fileparse($file))[1];
-
-  if (@files) {
-    foreach my $file ( @files, $file ) {
-      $s->{_files}{all}{$file}{short_path} = $file =~ s/$longest_string//r;
-    }
-  } else {
-    $s->{_files}{all}{$file}{short_path} = $file;
-  }
-}
-
-sub _add_file {
-  my ($s, $file) = @_;
-
-  $file                                 = $s->_make_absolute($file);
-  $s->{_files}{all}{$file}{full_path}   = $file;
-  my $filename                          = (fileparse($file))[0];
-  $s->{_files}{all}{$file}{filename}    = $filename;
-
-  push @{$s->{_files}{new}}, $file if !$s->{_files}{$file};
-}
-
 sub _add_obj {
   my ($s, $type, $obj) = @_;
   $s->_scroak("Missing args to 'add_obj' method. Aborting.") if (!$type || !$obj);
@@ -254,30 +155,7 @@ sub _add_obj {
   $s->{_files}{all}{$s->selected}{"${type}_obj"} = $obj;
 }
 
-sub _make_absolute {
-  my ($s, $file) = @_;
-
-  return $file =~ /^\// ? $file : cwd() . "/$file";
-}
-
-sub _get_file_manifest {
-  my ($s, $dir) = @_;
-
-  opendir (my $dh, $dir) or die "Can't opendir $dir: $!";
-  my @dirs_and_files = grep { /^[^\.]/ } readdir($dh);
-
-  my @files = grep { -f "$dir/$_" } @dirs_and_files;
-  $s->_add_file("$dir/$_") for @files;
-
-  my @dirs  = grep { -d "$dir/$_" } @dirs_and_files if $s->{_options}{recurse};
-  foreach my $tdir (@dirs) {
-    opendir (my $tdh, "$dir/$tdir") || die "Can't opendir $tdir: $!";
-    $s->_get_file_manifest("$dir/$tdir");
-  }
-
-}
-
-# From old File::Collector::Base file
+# Methods for iterators
 
 sub get_obj_prop {
   my ($s, $obj, $prop) = @_;
@@ -400,6 +278,8 @@ sub print_short_name {
   print $s->_short_name . "\n";
 }
 
+# private helper methods
+
 sub _short_name {
   my $s    = shift;
   my $file = ref ($s->selected) eq 'HASH'
@@ -417,6 +297,126 @@ sub _scroak {
   my $s = shift;
   my $msg = shift;
   croak($msg . ' ' . (fileparse((caller(1))[1]))[0] . ', line ' . (caller(1))[2] . "\n");
+}
+
+sub _make_absolute {
+  my ($s, $file) = @_;
+
+  return $file =~ /^\// ? $file : cwd() . "/$file";
+}
+
+sub _get_file_manifest {
+  my ($s, $dir) = @_;
+
+  opendir (my $dh, $dir) or die "Can't opendir $dir: $!";
+  my @dirs_and_files = grep { /^[^\.]/ } readdir($dh);
+
+  my @files = grep { -f "$dir/$_" } @dirs_and_files;
+  $s->_add_file("$dir/$_") for @files;
+
+  my @dirs  = grep { -d "$dir/$_" } @dirs_and_files if $s->{_options}{recurse};
+  foreach my $tdir (@dirs) {
+    opendir (my $tdh, "$dir/$tdir") || die "Can't opendir $tdir: $!";
+    $s->_get_file_manifest("$dir/$tdir");
+  }
+
+}
+
+sub _run_all {
+  my $s = shift;
+  my $classes = $s->{_classes};
+  foreach my $c ( @$classes ) {
+    my $role = Role::Tiny->apply_roles_to_object ($s, $c);
+    $role->_run_processes if $role->can('_run_processes');;
+  }
+}
+
+sub _generate_short_names {
+  my $s = shift;
+
+  my @files                         = $s->get_files;
+  my $file                          = pop @files;
+  my @comps                         = split /\//, $file;
+  my ($new_string, $longest_string) = '';
+  foreach my $cfile (@files) {
+    my @ccomps = split /\//, $cfile;
+    my $lc     = 0;
+
+    foreach my $comp (@ccomps) {
+      if (defined $comps[$lc] && $ccomps[$lc] eq $comps[$lc]) {
+        $new_string   .= $ccomps[$lc++] . '/';
+        next;
+      }
+      $longest_string = $new_string;
+      @comps          = split /\//, $new_string;
+      $new_string     = '';
+      last;
+    }
+  }
+
+  $s->{_common_dir} = $longest_string || (fileparse($file))[1];
+
+  if (@files) {
+    foreach my $file ( @files, $file ) {
+      $s->{_files}{all}{$file}{short_path} = $file =~ s/$longest_string//r;
+    }
+  } else {
+    $s->{_files}{all}{$file}{short_path} = $file;
+  }
+}
+
+sub _add_file {
+  my ($s, $file) = @_;
+
+  $file                                 = $s->_make_absolute($file);
+  $s->{_files}{all}{$file}{full_path}   = $file;
+  my $filename                          = (fileparse($file))[0];
+  $s->{_files}{all}{$file}{filename}    = $filename;
+
+  push @{$s->{_files}{new}}, $file if !$s->{_files}{$file};
+}
+
+sub _init_all_processors {
+  my $s = shift;
+
+  foreach my $c ( @{ $s->{_classes} } ) {
+    my @processors = $c->_init_processors if $c->can('_init_processors');
+    my $it_class = $c . '::Processor';
+    foreach my $it ( @processors ) {
+      next if ($s->{_files}{"${it}_files"});    # don't overwrite existing processor
+      $s->{_processor_map}{$it} = $it_class;
+      $s->{_files}{"${it}_files"} = $it_class->new($s->{_files}{all}, \($s->{selected}));
+    }
+  }
+}
+
+sub _classify_all {
+  my $s = shift;
+  foreach my $r ( @{ $s->{_roles} } ) {
+#    logd $r;
+    $r->_classify_file() if $r->can('_classify_file');;
+  }
+}
+
+sub _get_args {
+  my $user_opts = {};
+  my @resources;
+  my $classes;
+  foreach my $arg (@_) {
+    if (!ref $arg) {
+      push @resources, $arg;
+    } elsif (ref($arg) eq 'HASH') {
+      croak ('Only one option hash allowed in constructor. Aborting.') if %$user_opts;
+      $user_opts = $arg;
+    } elsif (ref($arg) eq 'ARRAY') {
+      die ('Only one class array allowed in constructor. Aborting.') if $classes;
+      $classes = $arg;
+    }
+  }
+  die('No list of resources passed to constructor. Aborting.') if ! @resources;
+  #die('No Collector class array passed to constructor. Aborting.') if !$classes;
+
+  return ($user_opts, $classes, @resources);
 }
 
 1; # Magic true value
