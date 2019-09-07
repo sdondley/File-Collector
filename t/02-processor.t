@@ -28,7 +28,7 @@ plan tests => $tests;
  stdout_like { $da->some_files->do->print_blah_names } qr/^dir1\/file4$/ms,
    'prints first file';
 
- stdout_like { $da->some_files->do->print_short_names } qr/^dir2\/file\d\n[^\n]/ms,
+ stdout_like { $da->some_files->do->print_short_name } qr/^dir2\/file\d\n[^\n]/ms,
    'prints first file with no double line break';
 
  stdout_like { while ($da->next_some_file) { $da->print_short_name; } } qr/^file2$/ms,
