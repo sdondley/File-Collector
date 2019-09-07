@@ -4,7 +4,7 @@ File::Collector - Collects files and sets up file Processors
 
 # VERSION
 
-version 0.020
+version 0.021
 
 # OVERVIEW
 
@@ -18,26 +18,25 @@ kind of repository. Let's say that files in the directory need to be filtered
 and the content of the files needs to be parsed, validated, rendered and/or
 changed before getting imported. Complicating things further, let's say that the
 name and location of the file in the target repository is dependent upon the
-content of the files in some way. Oh, and you also have to check to make sure
-the file hasn't already been imported.
+content of the files in some way and that you also have to check to make sure
+the file hasn't already been imported into the repository.
 
 This kind of task can be acomplished with a series of one-off scripts that
-process and import your files with each script producing output suitable for the
-next script. But if such imports involve a high level of complexity, running
-separate scripts for each processing stage can be slow, tedious, error-prone and
-a headache to maintain and organize.
+process and import your files in stages. Each script produces output suitable
+for the next one. But running separate scripts for each processing stage can
+be slow, tedious, error-prone and a headache to maintain and organize.
 
-The `File::Collector` and `File::Collector::Processor` base modules can help
-you set up a chain of modules to combine a series of workflows into a single
-logical package that will make complicated file processing more robust,
-testable, and much simpler to code.
+The `File::Collector` and `File::Collector::Processor` base modules make it
+trivial to chain file processing modules into one logical package to make
+complicated file processing more robust, testable, and simpler to code.
 
 # SYNOPSIS
 
-There are three steps to using `File::Collector`. First, you create your
-`Collector` classes, one for each stage of your file processing. Next, you
-create `Processor` classes, one for each of your `Collector` classes. Finally,
-you write a simple script to actually do the processing.
+There are three steps to using `File::Collector`. First, create at least one
+`Collector` class for classifying and filtering files. Next, create a
+`Processor` class your `Collector` class will use to process the classified
+files. Finally, write a script to construct a new `File::Collector` object to
+collect and process your files.
 
 **Step 1: Create the `Collector` classes**
 
@@ -60,10 +59,9 @@ you write a simple script to actually do the processing.
       return qw ( good bad );
     }
 
-    # Next we add a _classify_file method that is called once for each file
-    # added when constructing our Collector object. The primary job of this
-    # method is to add files and any associated objects to a Processor for
-    # further processing.
+    # Next we add a _classify_file method that is called once for each file added
+    # to our Collector object. The primary job of this method is to add files and
+    # any associated objects to a Processor for further processing.
     sub _classify_file {
       my $s = shift;
 
@@ -75,9 +73,9 @@ you write a simple script to actually do the processing.
       # Note how we pass the name of the current file being processed to the
       # object by using the "selected" method which intelligently generates the
       # full path to the file currently being processed by _classify_file. Also
-      # note that we don't have to bother passing the name of the file to
-      # _add_obj method since this method can figure out which file is beting
-      # processed by calling the "selected" method as well.
+      # note that we don't have to bother passing the name of the file to _add_obj
+      # method since this method can figure out which file is being processed by
+      # calling the "selected" method as well.
       my $data = SomeObject->new( $s->selected );
       $s->_add_obj('data', $data);
 
@@ -107,16 +105,16 @@ you write a simple script to actually do the processing.
       $s->bad_files->do->fix;
       $s->bad_files->do->modify;
 
-      # You can call methods found in any of the earlier Processor classes you
-      # run in your chain.
-      $s->good_files->do->move;
-      $s->bad_files->do->move;
+      # You can call methods found in any of the earlier Processor classes in your
+      # file processing chain.
+      $s->good_files->do->import;
+      $s->bad_files->do->import;
     }
 
 **Step 2: Create your `Processor` classes.**
 
-    # Your Processor class must have the same package name as the Collector
-    # class but with "::Processor" tacked on to the end.
+    # The Processor class must have the same package name as the Collector class
+    # but with "::Processor" tacked on to the end.
     package File::Collector::YourCollector::Processor;
 
     # This line is required to get access to the methods from the base class.
@@ -133,7 +131,7 @@ you write a simple script to actually do the processing.
       # Properties of objects added by Collector classes can be easily accessed.
       my @values = $s->get_obj_prop ( 'data', 'header_values' );
 
-      # You can call methods found insided objects, too. Here we run the
+      # You can call methods found inside objects, too. Here we run the
       # add_header() method on the data object and pass on values to it.
       $s->obj_meth ( 'data', 'add_header', \@values );
     }
@@ -143,7 +141,7 @@ you write a simple script to actually do the processing.
       ...
     }
 
-**Step 3: Construction the Collector**
+**Step 3: Construct the Collector**
 
 Once your classes have been created, you can run all of your collectors and
 processors simply by constructing a `Collector` object.
@@ -165,7 +163,7 @@ option hash, which is optional.
       { recurse => 0 });
 
     # The C<$collector> object has some useful methods:
-    $collector->get_count; # returns total number of files in the collection
+    $collector->get_count;  # returns the total number of files in the collection
 
     # Convenience methods with a little under-the-hood magic make it painless to
     # iterate over files and run methods on them.
@@ -196,9 +194,9 @@ The methods can be run on `Collector` objects after they've been constructed.
                                           [ 'Custom::Classifier' ]
                                           { recurse => 0 } );
 
-Creates a `Collector` object to collect files from the directories and files
-in the argument list. Once collected, the files will be processed by each of
-the `@custom_collector_classes` in the order supplied by an array argument. An
+Creates a `Collector` object that collects files from the directories and files
+in the argument list. Once collected, the files are processed by each of the
+`@custom_collector_classes` in the order supplied by the array argument. An
 option hash can be supplied to turn directory recursion off with by setting
 `recurse` to false.
 
@@ -371,8 +369,9 @@ and the file name of the file being processed or in an iterator.
 # REQUIRES
 
 - [Carp](https://metacpan.org/pod/Carp)
-- [Cwd](https://metacpan.org/pod/Cwd)
 - [File::Basename](https://metacpan.org/pod/File::Basename)
+- [File::Spec](https://metacpan.org/pod/File::Spec)
+- [Log::Log4perl::Shortcuts](https://metacpan.org/pod/Log::Log4perl::Shortcuts)
 - [Role::Tiny::With](https://metacpan.org/pod/Role::Tiny::With)
 - [strict](https://metacpan.org/pod/strict)
 - [warnings](https://metacpan.org/pod/warnings)
@@ -422,6 +421,15 @@ See perlmodinstall for information and options on installing Perl modules.
 # AUTHOR
 
 Steve Dondley <s@dondley.com>
+
+# Special Thanks
+
+Thanks to all the generous monks at the [PerlMonks](https://PerlMonks.org)
+community for patiently answering my (sometimes assenine) questions. A very
+special mention goes to [jcb](https://www.perlmonks.org/?node_id=1149436) whose
+advice was invaluable to improving the quality of this module. Another shout out
+to [Hippo](https://www.perlmonks.org/?node=hippo) for the suggesting
+[Role::Tiny](https://metacpan.org/pod/Role::Tiny) to help make the module more flexible.
 
 # COPYRIGHT AND LICENSE
 
