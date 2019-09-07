@@ -1,10 +1,11 @@
 package File::Collector ;
 use strict; use warnings;
 
-use Cwd;
 use Carp;
+use File::Spec;
 use File::Basename;
 use Role::Tiny::With;
+use Log::Log4perl::Shortcuts qw(:all);
 
 # public methods
 
@@ -54,14 +55,12 @@ sub new {
     selected        => '',
     _options        => \%opts,
     _classes        => $classes,
-    _roles          => undef,
     all             => undef,
   }, $class;
 
-  # build roles
+  # eval class code
   foreach my $class ( @$classes ) {
-    my $role = Role::Tiny->apply_roles_to_object ($s, $class);
-    push @{ $s->{_roles} }, $role;
+    eval "require $class";
   }
 
   # a bit of trickery to make Processor class code consistent with base class
@@ -170,7 +169,6 @@ sub get_obj_prop {
   my $o            = $obj . '_obj';
   my $object       = $s->{all}{$file}{$o};
   if (! exists $object->{$attr} ) {
-    logd $attr;
     $s->_scroak ("Non-existent $obj object attribute requested: '_$prop'");
   }
   my $value = $object->{$attr};
@@ -298,27 +296,20 @@ sub _scroak {
   croak($msg . ' ' . (fileparse((caller(1))[1]))[0] . ', line ' . (caller(1))[2] . "\n");
 }
 
-sub _make_absolute {
-  my ($s, $file) = @_;
-
-  return $file =~ /^\// ? $file : cwd() . "/$file";
-}
-
 sub _get_file_manifest {
   my ($s, $dir) = @_;
 
   opendir (my $dh, $dir) or die "Can't opendir $dir: $!";
   my @dirs_and_files = grep { /^[^\.]/ } readdir($dh);
 
-  my @files = grep { -f "$dir/$_" } @dirs_and_files;
-  $s->_add_file("$dir/$_") for @files;
+  my @files = grep { -f File::Spec->catfile($dir, $_) } @dirs_and_files;
+  $s->_add_file( File::Spec->catfile($dir, $_)) for @files;
 
-  my @dirs  = grep { -d "$dir/$_" } @dirs_and_files if $s->{_options}{recurse};
+  my @dirs  = grep { -d File::Spec->catdir( $dir, $_ ) } @dirs_and_files if $s->{_options}{recurse};
   foreach my $tdir (@dirs) {
-    opendir (my $tdh, "$dir/$tdir") || die "Can't opendir $tdir: $!";
-    $s->_get_file_manifest("$dir/$tdir");
+    opendir (my $tdh, File::Spec->catdir($dir, $tdir)) || die "Can't opendir $tdir: $!";
+    $s->_get_file_manifest(File::Spec->catdir( $dir, $tdir ));
   }
-
 }
 
 sub _run_all {
@@ -335,19 +326,22 @@ sub _generate_short_names {
 
   my @files                         = $s->get_files;
   my $file                          = pop @files;
-  my @comps                         = split /\//, $file;
+  my ($vol, $dirs)                  = File::Spec->splitpath( $file );
+  my @comps                         = File::Spec->splitdir( $dirs );
   my ($new_string, $longest_string) = '';
   foreach my $cfile (@files) {
-    my @ccomps = split /\//, $cfile;
+    my ($cvol, $cdirs)           = File::Spec->splitpath( $cfile );
+    my @ccomps                   = File::Spec->splitdir($cfile);
     my $lc     = 0;
 
     foreach my $comp (@ccomps) {
       if (defined $comps[$lc] && $ccomps[$lc] eq $comps[$lc]) {
-        $new_string   .= $ccomps[$lc++] . '/';
+        $new_string   .= File::Spec->catfile($ccomps[$lc++], '');
         next;
       }
       $longest_string = $new_string;
-      @comps          = split /\//, $new_string;
+      ($cvol, $cdirs) = File::Spec->splitpath( $new_string );
+      @comps          = File::Spec->splitdir($cdirs);
       $new_string     = '';
       last;
     }
@@ -367,7 +361,7 @@ sub _generate_short_names {
 sub _add_file {
   my ($s, $file) = @_;
 
-  $file                                 = $s->_make_absolute($file);
+  $file                                 = File::Spec->rel2abs( $file );
   $s->{_files}{all}{$file}{full_path}   = $file;
   my $filename                          = (fileparse($file))[0];
   $s->{_files}{all}{$file}{filename}    = $filename;
@@ -391,9 +385,9 @@ sub _init_all_processors {
 
 sub _classify_all {
   my $s = shift;
-  foreach my $r ( @{ $s->{_roles} } ) {
-#    logd $r;
-    $r->_classify_file() if $r->can('_classify_file');;
+  foreach my $c ( @{ $s->{_classes} } ) {
+    my $role = Role::Tiny->apply_roles_to_object ($s, $c);
+    $role->_classify_file() if $role->can('_classify_file');;
   }
 }
 
@@ -435,26 +429,25 @@ kind of repository. Let's say that files in the directory need to be filtered
 and the content of the files needs to be parsed, validated, rendered and/or
 changed before getting imported. Complicating things further, let's say that the
 name and location of the file in the target repository is dependent upon the
-content of the files in some way. Oh, and you also have to check to make sure
-the file hasn't already been imported.
+content of the files in some way and that you also have to check to make sure
+the file hasn't already been imported into the repository.
 
 This kind of task can be acomplished with a series of one-off scripts that
-process and import your files with each script producing output suitable for the
-next script. But if such imports involve a high level of complexity, running
-separate scripts for each processing stage can be slow, tedious, error-prone and
-a headache to maintain and organize.
+process and import your files in stages. Each script produces output suitable
+for the next one. But running separate scripts for each processing stage can
+be slow, tedious, error-prone and a headache to maintain and organize.
 
-The C<File::Collector> and C<File::Collector::Processor> base modules can help
-you set up a chain of modules to combine a series of workflows into a single
-logical package that will make complicated file processing more robust,
-testable, and much simpler to code.
+The C<File::Collector> and C<File::Collector::Processor> base modules make it
+trivial to chain file processing modules into one logical package to make
+complicated file processing more robust, testable, and simpler to code.
 
 =head1 SYNOPSIS
 
-There are three steps to using C<File::Collector>. First, you create your
-C<Collector> classes, one for each stage of your file processing. Next, you
-create C<Processor> classes, one for each of your C<Collector> classes. Finally,
-you write a simple script to actually do the processing.
+There are three steps to using C<File::Collector>. First, create at least one
+C<Collector> class for classifying and filtering files. Next, create a
+C<Processor> class your C<Collector> class will use to process the classified
+files. Finally, write a script to construct a new C<File::Collector> object to
+collect and process your files.
 
 B<Step 1: Create the C<Collector> classes>
 
@@ -477,10 +470,9 @@ B<Step 1: Create the C<Collector> classes>
     return qw ( good bad );
   }
 
-  # Next we add a _classify_file method that is called once for each file
-  # added when constructing our Collector object. The primary job of this
-  # method is to add files and any associated objects to a Processor for
-  # further processing.
+  # Next we add a _classify_file method that is called once for each file added
+  # to our Collector object. The primary job of this method is to add files and
+  # any associated objects to a Processor for further processing.
   sub _classify_file {
     my $s = shift;
 
@@ -492,9 +484,9 @@ B<Step 1: Create the C<Collector> classes>
     # Note how we pass the name of the current file being processed to the
     # object by using the "selected" method which intelligently generates the
     # full path to the file currently being processed by _classify_file. Also
-    # note that we don't have to bother passing the name of the file to
-    # _add_obj method since this method can figure out which file is beting
-    # processed by calling the "selected" method as well.
+    # note that we don't have to bother passing the name of the file to _add_obj
+    # method since this method can figure out which file is being processed by
+    # calling the "selected" method as well.
     my $data = SomeObject->new( $s->selected );
     $s->_add_obj('data', $data);
 
@@ -524,16 +516,16 @@ B<Step 1: Create the C<Collector> classes>
     $s->bad_files->do->fix;
     $s->bad_files->do->modify;
 
-    # You can call methods found in any of the earlier Processor classes you
-    # run in your chain.
-    $s->good_files->do->move;
-    $s->bad_files->do->move;
+    # You can call methods found in any of the earlier Processor classes in your
+    # file processing chain.
+    $s->good_files->do->import;
+    $s->bad_files->do->import;
   }
 
 B<Step 2: Create your C<Processor> classes.>
 
-  # Your Processor class must have the same package name as the Collector
-  # class but with "::Processor" tacked on to the end.
+  # The Processor class must have the same package name as the Collector class
+  # but with "::Processor" tacked on to the end.
   package File::Collector::YourCollector::Processor;
 
   # This line is required to get access to the methods from the base class.
@@ -550,7 +542,7 @@ B<Step 2: Create your C<Processor> classes.>
     # Properties of objects added by Collector classes can be easily accessed.
     my @values = $s->get_obj_prop ( 'data', 'header_values' );
 
-    # You can call methods found insided objects, too. Here we run the
+    # You can call methods found inside objects, too. Here we run the
     # add_header() method on the data object and pass on values to it.
     $s->obj_meth ( 'data', 'add_header', \@values );
   }
@@ -560,7 +552,7 @@ B<Step 2: Create your C<Processor> classes.>
     ...
   }
 
-B<Step 3: Construction the Collector>
+B<Step 3: Construct the Collector>
 
 Once your classes have been created, you can run all of your collectors and
 processors simply by constructing a C<Collector> object.
@@ -582,7 +574,7 @@ option hash, which is optional.
      { recurse => 0 });
 
    # The C<$collector> object has some useful methods:
-   $collector->get_count; # returns total number of files in the collection
+   $collector->get_count;  # returns the total number of files in the collection
 
    # Convenience methods with a little under-the-hood magic make it painless to
    # iterate over files and run methods on them.
@@ -609,9 +601,9 @@ option hash, which is optional.
                                         [ 'Custom::Classifier' ]
 				        { recurse => 0 } );
 
-Creates a C<Collector> object to collect files from the directories and files
-in the argument list. Once collected, the files will be processed by each of
-the C<@custom_collector_classes> in the order supplied by an array argument. An
+Creates a C<Collector> object that collects files from the directories and files
+in the argument list. Once collected, the files are processed by each of the
+C<@custom_collector_classes> in the order supplied by the array argument. An
 option hash can be supplied to turn directory recursion off with by setting
 C<recurse> to false.
 
@@ -780,3 +772,12 @@ Requires no configuration files or environment variables.
 =head1 SEE ALSO
 
 L<File::Collector::Processor>
+
+=head1 Special Thanks
+
+Thanks to all the generous monks at the L<PerlMonks|https://PerlMonks.org>
+community for patiently answering my (sometimes assenine) questions. A very
+special mention goes to L<jcb|https://www.perlmonks.org/?node_id=1149436> whose
+advice was invaluable to improving the quality of this module. Another shout out
+to L<Hippo|https://www.perlmonks.org/?node=hippo> for the suggesting
+L<Role::Tiny> to help make the module more flexible.
