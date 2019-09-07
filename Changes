@@ -1,6 +1,9 @@
-Revision history for File-Collector
+Revision history for {{$dist->name}}
+
+{{$NEXT}}
 
 0.025     2019-09-07 19:23:05-04:00 America/New_York
+  - remove Log4perl module
 
 0.024     2019-09-07 16:20:02-04:00 America/New_York
   - improve abstracts for base modules
