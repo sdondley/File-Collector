@@ -4,7 +4,7 @@ File::Collector - Collects files and sets up file Processors
 
 # VERSION
 
-version 0.022
+version 0.023
 
 # OVERVIEW
 
