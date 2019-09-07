@@ -1,37 +1,7 @@
-Revision history for File-Collector
+Revision history for {{$dist->name}}
+
+{{$NEXT}}
 
 0.018     2019-09-06 20:18:48-04:00 America/New_York
+  - Test init release
 
-0.017     2019-09-06 12:30:56-04:00 America/New_York
-
-0.016     2019-09-06 12:30:02-04:00 America/New_York
-
-0.015     2019-09-06 12:08:47-04:00 America/New_York
-
-0.014     2019-09-06 11:47:35-04:00 America/New_York
-
-0.013     2019-09-06 11:45:14-04:00 America/New_York
-
-0.012     2019-09-06 11:42:40-04:00 America/New_York
-
-0.011     2019-09-06 11:40:27-04:00 America/New_York
-
-0.010     2019-09-06 11:34:57-04:00 America/New_York
-
-0.009     2019-09-06 11:29:50-04:00 America/New_York
-
-0.008     2019-09-06 11:17:29-04:00 America/New_York
-
-0.007     2019-09-06 10:40:19-04:00 America/New_York
-
-0.006     2019-09-06 10:38:35-04:00 America/New_York
-
-0.005     2019-09-06 10:36:28-04:00 America/New_York
-
-0.004     2019-09-06 10:30:21-04:00 America/New_York
-
-0.003     2019-09-06 10:27:47-04:00 America/New_York
-
-0.002     2019-09-06 10:14:52-04:00 America/New_York
-
-0.001     2019-09-03 12:28:47-04:00 America/New_York
