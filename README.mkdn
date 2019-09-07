@@ -4,7 +4,7 @@ File::Collector
 
 # VERSION
 
-version 0.018
+version 0.019
 
 # OVERVIEW
 
@@ -30,7 +30,7 @@ a headache to maintain and organize.
 The `File::Collector` and `File::Collector::Processor` base modules can help
 you set up a chain of modules to combine a series of workflows into a single
 logical package that will make complicated file processing more robust,
-testable, and easier code.
+testable, and much simpler to code.
 
 # SYNOPSIS
 
@@ -44,45 +44,45 @@ you write a simple script to actually do the processing.
     package File::Collector::YourCollector;
     use strict; use warnings;
 
-    # Get access to methods provided by the base class
-    use parent 'File::Collector';
-
-    # This package contains the processing methods associated with your
-    # C<Collector (see below).
+    # Here we add in the package containing the processing methods associated
+    # with the Collector (see below).
     use File::Collector::YourCollector::Processor;
 
     # Objects can store information about the files in the collection which
-    # can be accessed by other other C<Collector> and C<Processor> classes.
+    # can be accessed by other Collector and Processor classes.
     use SomeObject;
 
-    # Add the names of your file collections with the C<_init_processors> method.
-    # The file collection names are used to create names for the C<Processor>
-    # objects that store the paths to files and other data about the files.
-    # In the example below, we add two file collections, "good" and "bad."
+    # Add categories for file collections with the _init_processors method. These
+    # categories are used as labels for Processor objects which contain
+    # information about the files and can run methods on them. In the example
+    # below, we add two file collection categories, "good" and "bad."
     sub _init_processors {
       return qw ( good bad );
     }
 
-    # Next we add a C<_classify_file> method that is called once for each file
-    # added when constructing our C<Collector> object. The primary job of this
-    # method is to classify your files and create objects which can be associated
-    # with individual files.
+    # Next we add a _classify_file method that is called once for each file
+    # added when constructing our Collector object. The primary job of this
+    # method is to add files and any associated objects to a Processor for
+    # further processing.
     sub _classify_file {
       my $s = shift;
 
       # First, we create an object and associate it with our file using the
-      # C<_add_obj> method. There is no requirement that you create objects but
-      # they will make data about your file easily available to your classes. We
-      # recommend offloading as much logic as possible to objects to keep your
-      # classes easy and simple to follow.
+      # _add_obj method. There is no requirement that you create objects but they
+      # will make data about your file easily available to other classes.
+      # Offloading as much logic as possible to objects will keep classes simple.
 
-      # Note the use of the C<selected> method which is a handy way to return the
-      # full path to the file currently being processed by C<_classify_file>.
+      # Note how we pass the name of the current file being processed to the
+      # object by using the "selected" method which intelligently generates the
+      # full path to the file currently being processed by _classify_file. Also
+      # note that we don't have to bother passing the name of the file to
+      # _add_obj method since this method can figure out which file is beting
+      # processed by calling the "selected" method as well.
       my $data = SomeObject->new( $s->selected );
       $s->_add_obj('data', $data);
 
       # Now that we know something about our file, we can classify the files
-      # according to any criteria of your choosing.
+      # according to any criteria of our choosing.
       # to a processor category
       if ( $data->{has_good_property} ) {
         $s->_classify('good');
@@ -92,22 +92,22 @@ you write a simple script to actually do the processing.
     }
 
     # Finally, the _run_processes method contains method calls to your
-    # C<Processor> methods.
+    # Processor methods.
     sub _run_processes {
       my $s = shift;
 
       # Below are the methods we can run on the files in our collection. The
-      # C<good_files> method returns the collection of files classified as "good"
-      # and the C<do> method is a method that automatically iterates over the
-      # files. The C<modify> method is one of the methods in our C<Processor>
-      # classes (see below).
+      # "good_files" method returns the collection of files classified as "good"
+      # and the "do" method is a method that automatically iterates over the
+      # files. The "modify" method is one of the methods in our Processor class
+      # (see below).
       $s->good_files->do->modify;
 
       # Run methods on files classified as "bad"
       $s->bad_files->do->fix;
       $s->bad_files->do->modify;
 
-      # You can call methods found in any of the earlier C<Processor> classes you
+      # You can call methods found in any of the earlier Processor classes you
       # run in your chain.
       $s->good_files->do->move;
       $s->bad_files->do->move;
@@ -115,13 +115,15 @@ you write a simple script to actually do the processing.
 
 **Step 2: Create your `Processor` classes.**
 
-    # Your C<Processor> class must have the same package name as the C<Collector>
-    # class with C<::Processor> tacked on to the end.
+    # Your Processor class must have the same package name as the Collector
+    # class but with "::Processor" tacked on to the end.
     package File::Collector::YourCollector::Processor;
+
+    # This line is required to get access to the methods from the base class.
     use parent 'File::Collector::Processor';
 
-    # This method is run once for each file in a collection when we use the C<do>
-    # method.
+    # This custom method is run once for each file in a collection when we use
+    # the "do" method.
     sub modify {
       my $s = shift;
 
@@ -129,14 +131,14 @@ you write a simple script to actually do the processing.
       next if ($s->attr_defined ( 'data', 'processed' ));
 
       # Properties of objects added by Collector classes can be easily accessed.
-      my @values = $s->get_obj_prop ( 'header', 'header_values' );
+      my @values = $s->get_obj_prop ( 'data', 'header_values' );
 
       # You can call methods found insided objects, too. Here we run the
       # add_header() method on the data object and pass on values to it.
       $s->obj_meth ( 'data', 'add_header', \@values );
     }
 
-    # Code for fixing "bad" files goes here.
+    # We can add as many additional custom methods as we need.
     sub fix {
       ...
     }
@@ -155,8 +157,8 @@ option hash, which is optional.
       # The first arguments are a list of resources to be added
       'my/dir', 'a_file.txt'
 
-      # The second argument is an array of C<Collector> class names in the order
-      # you want them to run
+      # The second argument is an array of Collector class names listed in the
+      # same order you want them to run
       [ 'File::Collector::First', 'File::Collector::YourCollector'],
 
       # Finally, an optional hash argument for options can be supplied
@@ -184,28 +186,33 @@ option hash, which is optional.
 
 The methods can be run on `Collector` objects after they've been constructed.
 
-### new( 'dir', 'file', ..., \[ 'My::Custom::Class::One', ... \], \\%opts )
+### new( $dir, $file, ..., \[ @custom\_collector\_classes \], \\%opts )
 
-### new( 'dir', 'file', ..., \[ 'My::Custom::Class::One', ... \] )
+### new( $dir, $file, ..., \[ @custom\_collector\_classes \] )
 
-    my $collector = File::Collector::MyClassifier->new('my/directory', { recurse => 0 } );
+### new( $dir, $file, ..., )
 
-Creates a `Collector` object to collect files in the argument list. An option
-hash can be supplied to turn directory recursion off with `recurse` which is
-set to true by default. Once created, the `Collector` immediately goes to work
-collecting and processing the files according to the workflow you created with
-your custom modules.
+    my $collector = File::Collector->new( 'my/directory',
+                                          [ 'Custom::Classifier' ]
+                                          { recurse => 0 } );
+
+Creates a `Collector` object to collect files from the directories and files
+in the argument list. Once collected, the files will be processed by each of
+the `@custom_collector_classes` in the order supplied by an array argument. An
+option hash can be supplied to turn directory recursion off with by setting
+`recurse` to false.
 
 `new` returns an object which contains all the files, their processing classes,
 and any data you have associated with the files. This object has serveral
 methods that can be used to inspect the object.
 
-### add\_resources( 'dir', 'file' )
+### add\_resources( $dir, $file, ... )
 
-    $collector->add_resources( 'file1', 'dir2', ... );
+    $collector->add_resources( 'myfile1.txt', '/my/home/dir/files/', ... );
 
-Adds additional file resources to the collection and processes them. This method
-accepts no option hash.
+Adds additional file resources to an existing collection and processes them.
+This method accepts no option hash and the same one supplied to the new
+constructor is used.
 
 ### get\_count()
 
@@ -219,20 +226,54 @@ Returns the total number of files in the collection.
 
 Returns a list of the full path of each file in the collection.
 
-### get\_file($file)
+### get\_file( $file\_path )
 
-    my $file = $collector->get_files('/full/path/to/file.txt');
+    my $file = $collector->get_file( '/full/path/to/file.txt' );
 
 Returns a reference of the data and objects associated with a file.
 
 ### list\_files\_long()
 
-Prints the full path names of each file in the collection, sorted alphabetically, to STDOUT.
+Prints the full path names of each file in the collection, sorted
+alphabetically, to STDOUT.
 
 ### list\_files()
 
 Same as `list_files_long` but prints the files' paths relative to the top level
 directory shared by all the files in the collections.
+
+### next\_FILE\_CATEGORY\_file()
+
+    while ($collector->next_good_file) {
+      my $file = $collector->selected;
+      ...
+    }
+
+Retrieves the first file from the the collection of files indicated by
+`FILE_CATEGORY`. Each subsequent `next` call iterates over the list of files. Returns
+a boolean false when the file is exhausted. Provides an easy way to iterate
+over files and perform operations on them.
+
+`FILE_CATEGORY` must be a valid processor name as supplied by one of the
+`_init_processors` method.
+
+### FILE\_CATEGORY\_files()
+
+    my $processor = $collector->good_files;
+
+Returns the `File::Processor` object for the category indicated by `FILE_CATEGROY`.
+
+### get\_FILE\_CATEGORY\_files()
+
+Similar to `FILE_CATEGORY_files()` except a shallow clone of the `File::Processor` object is returned. Useful if you require separate iterators for files in the same category.
+
+`FILE_CATEGORY` must be a valid processor name as supplied by one of the
+`_init_processors` method.
+
+### isa\_FILE\_CATEGORY\_file()
+
+Returns a boolean value reflecting whether the file being iterated over belongs
+to a category.
 
 ## Private Methods
 

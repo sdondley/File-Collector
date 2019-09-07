@@ -1,6 +1,6 @@
-Revision history for {{$dist->name}}
+Revision history for File-Collector
 
-{{$NEXT}}
+0.019     2019-09-07 00:48:00-04:00 America/New_York
 
 0.018     2019-09-06 20:18:48-04:00 America/New_York
   - Test init release
