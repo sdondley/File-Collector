@@ -351,7 +351,9 @@ sub _generate_short_names {
 
   if (@files) {
     foreach my $file ( @files, $file ) {
-      $s->{_files}{all}{$file}{short_path} = $file =~ s/$longest_string//r;
+      my $tfile = $file;
+      $tfile =~ s/$longest_string//;
+      $s->{_files}{all}{$file}{short_path} = $tfile;
     }
   } else {
     $s->{_files}{all}{$file}{short_path} = $file;
