@@ -1,6 +1,9 @@
-Revision history for File-Collector
+Revision history for {{$dist->name}}
+
+{{$NEXT}}
 
 0.024     2019-09-07 16:20:02-04:00 America/New_York
+  - improve abstracts for base modules
 
 0.023     2019-09-07 16:15:19-04:00 America/New_York
   - fix spelling error in docs
