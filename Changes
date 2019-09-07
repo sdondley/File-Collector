@@ -5,6 +5,7 @@ Revision history for {{$dist->name}}
 0.020     2019-09-07 01:23:39-04:00 America/New_York
   - Fix major bug
   - update docs
+  - switch to use File::Spec
 
 0.019     2019-09-07 00:48:00-04:00 America/New_York
   - Remove Log4perl::Shortcuts
