@@ -53,7 +53,7 @@ sub do {
 }
 
 1; # Magic true value
-# ABSTRACT: this is what the module does
+# ABSTRACT: Base class for custom File::Collector::Processor classes for processing files classified by a File::Collector class.
 
 __END__
 

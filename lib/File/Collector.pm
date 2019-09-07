@@ -413,7 +413,7 @@ sub _get_args {
 }
 
 1; # Magic true value
-# ABSTRACT: Collects files and sets up file Processors
+# ABSTRACT: Base class for custom File::Collector classes for classifying files and calling File::Collector::Processor methods for processing files
 
 __END__
 
