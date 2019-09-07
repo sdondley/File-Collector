@@ -1,8 +1,7 @@
 package Test::Classifier ;
 
 use strict; use warnings;
-use lib 't/TestMods';
-use Test::Processor;
+use t::TestMods::Test::Processor;
 use Role::Tiny;
 
 sub _init_processors {
