@@ -776,7 +776,7 @@ L<File::Collector::Processor>
 =head1 Special Thanks
 
 Thanks to all the generous monks at the L<PerlMonks|https://PerlMonks.org>
-community for patiently answering my (sometimes assenine) questions. A very
+community for patiently answering my (sometimes asinine) questions. A very
 special mention goes to L<jcb|https://www.perlmonks.org/?node_id=1149436> whose
 advice was invaluable to improving the quality of this module. Another shout out
 to L<Hippo|https://www.perlmonks.org/?node=hippo> for the suggesting
