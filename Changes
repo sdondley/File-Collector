@@ -1,6 +1,9 @@
-Revision history for File-Collector
+Revision history for {{$dist->name}}
+
+{{$NEXT}}
 
 0.022     2019-09-07 15:50:19-04:00 America/New_York
+  - remove files in attic/ dir from distro
 
 0.021     2019-09-07 15:06:28-04:00 America/New_York
   - Fix install issue with path to test module
