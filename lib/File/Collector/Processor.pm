@@ -43,7 +43,6 @@ sub do {
 
 {
   package File::Collector::Processor::Do;
-  use Log::Log4perl::Shortcuts qw(:all);
 
   sub AUTOLOAD {
     my $self = shift;
