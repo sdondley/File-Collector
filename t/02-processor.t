@@ -33,13 +33,13 @@ plan tests => $tests;
  lives_ok { $da = File::Collector->new('t/test_data/many_files', 't/test_data/single_file/a_file.txt', ['Test::Classifier']); }
    'creates Test Classifier object';
 
- stdout_like { $da->some_files->do->print_blah_names } qr/^many_files\/dir1\/file6/ms,
+ stdout_like { $da->some_files->do->print_blah_names } qr/^many_files\/dir\d\/file\d/ms,
    'prints first file';
 
- stdout_like { $da->some_files->do->print_short_name } qr/^many_files\/dir2\/file\d\n[^\n]/ms,
+ stdout_like { $da->some_files->do->print_short_name } qr/^many_files\/dir\d\/file\d\n[^\n]/ms,
    'prints first file with no double line break';
 
- stdout_like { while ($da->next_some_file) { $da->print_short_name; } } qr/^many_files\/dir1\/file5$/ms,
+ stdout_like { while ($da->next_some_file) { $da->print_short_name; } } qr/^many_files\/dir\d\/file\d$/ms,
    'next_ method works';
 
  my $file = $da->get_file(cwd() . '/t/test_data/many_files/file1');

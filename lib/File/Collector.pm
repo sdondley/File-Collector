@@ -327,22 +327,19 @@ sub _generate_short_names {
 
   my @files                         = $s->get_files;
   my $file                          = pop @files;
-  my ($vol, $dirs)                  = File::Spec->splitpath( $file );
-  my @comps                         = File::Spec->splitdir( $dirs );
+  my @letters                       = split //, $file;
   my ($new_string, $longest_string) = '';
   foreach my $cfile (@files) {
-    my ($cvol, $cdirs)           = File::Spec->splitpath( $cfile );
-    my @ccomps                   = File::Spec->splitdir($cfile);
-    my $lc     = 0;
+    my @cletters = split //, $cfile;
+    my $lc       = 0;
 
-    foreach my $comp (@ccomps) {
-      if (defined $comps[$lc] && $ccomps[$lc] eq $comps[$lc]) {
-        $new_string   .= File::Spec->catfile($ccomps[$lc++], '');
+    foreach my $cletter (@cletters) {
+      if (defined $letters[$lc] && $cletters[$lc] eq $letters[$lc]) {
+        $new_string   .= $cletters[$lc++];
         next;
       }
       $longest_string = $new_string;
-      ($cvol, $cdirs) = File::Spec->splitpath( $new_string );
-      @comps          = File::Spec->splitdir($cdirs);
+      @letters        = split //, $new_string;
       $new_string     = '';
       last;
     }
