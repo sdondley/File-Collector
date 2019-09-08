@@ -456,6 +456,9 @@ B<Step 1: Create the C<Collector> classes>
   package File::Collector::YourCollector;
   use strict; use warnings;
 
+  # You Collector must use Role::Tiny or you will get an error
+  use Role::Tiny
+
   # Here we add in the package containing the processing methods associated
   # with the Collector (see below).
   use File::Collector::YourCollector::Processor;
@@ -604,9 +607,12 @@ option hash, which is optional.
 				        { recurse => 0 } );
 
 Creates a C<Collector> object that collects files from the directories and files
-in the argument list. Once collected, the files are processed by each of the
-C<@custom_collector_classes> in the order supplied by the array argument. An
-option hash can be supplied to turn directory recursion off by setting
+in the argument list. Once collected, the files are processed by the
+C<@custom_collector_classes> in the order supplied by the array argument. Each
+of your C<Collector> classes must C<use Role::Tiny> or you will receive an
+error.
+
+An option hash can be supplied to turn directory recursion off by setting
 C<recurse> to false.
 
 C<new> returns an object which contains all the files, their processing classes,
