@@ -9,3 +9,5 @@
 .build
 /attic*
 /share*
+/test.tgz
+/t/TestUtils.pm
