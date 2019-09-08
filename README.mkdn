@@ -4,7 +4,7 @@ File::Collector - Base class for custom File::Collector classes for classifying 
 
 # VERSION
 
-version 0.030
+version 0.031
 
 # OVERVIEW
 
