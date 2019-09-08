@@ -47,7 +47,7 @@ plan tests => $tests;
     'can get files';
 
   # 7
-  like $files[0], qr|t/test_data/single_file/a_file.txt$|,
+  like $files[0], qr|t[/\\]test_data[/\\]single_file[/\\]a_file.txt$|,
     'gets files';
 }
 
@@ -87,7 +87,7 @@ plan tests => $tests;
   stdout_like { $fc->list_files } qr/Files found/,
     'Prints list of files found';
 
-  stdout_like { $fc->list_files } qr/dir1\/file4/,
+  stdout_like { $fc->list_files } qr/dir1[\/\\]file4/,
     'Prints proper list of files found';
 
 }
