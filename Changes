@@ -1,6 +1,6 @@
-Revision history for {{$dist->name}}
+Revision history for File-Collector
 
-{{$NEXT}}
+0.034     2019-09-08 12:48:35-04:00 America/New_York
   - document that Collector classes need "use Role::Tiny;"
 
 0.033     2019-09-08 12:27:04-04:00 America/New_York

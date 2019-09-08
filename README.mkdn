@@ -4,7 +4,7 @@ File::Collector - Base class for custom File::Collector classes for classifying 
 
 # VERSION
 
-version 0.033
+version 0.034
 
 # OVERVIEW
 
@@ -42,6 +42,9 @@ collect and process your files.
 
     package File::Collector::YourCollector;
     use strict; use warnings;
+
+    # You Collector must use Role::Tiny or you will get an error
+    use Role::Tiny
 
     # Here we add in the package containing the processing methods associated
     # with the Collector (see below).
@@ -195,9 +198,12 @@ The methods can be run on `Collector` objects after they've been constructed.
                                           { recurse => 0 } );
 
 Creates a `Collector` object that collects files from the directories and files
-in the argument list. Once collected, the files are processed by each of the
-`@custom_collector_classes` in the order supplied by the array argument. An
-option hash can be supplied to turn directory recursion off by setting
+in the argument list. Once collected, the files are processed by the
+`@custom_collector_classes` in the order supplied by the array argument. Each
+of your `Collector` classes must `use Role::Tiny` or you will receive an
+error.
+
+An option hash can be supplied to turn directory recursion off by setting
 `recurse` to false.
 
 `new` returns an object which contains all the files, their processing classes,
