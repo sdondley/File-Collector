@@ -1,6 +1,6 @@
-Revision history for {{$dist->name}}
+Revision history for File-Collector
 
-{{$NEXT}}
+0.029     2019-09-07 20:47:35-04:00 America/New_York
 
 0.028     2019-09-07 20:14:10-04:00 America/New_York
   - Get min. perl version working for real this time
