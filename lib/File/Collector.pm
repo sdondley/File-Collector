@@ -25,16 +25,13 @@ sub AUTOLOAD {
     return $s->{_files}{"$2_files"}->_isa($s->selected);
   }
 
-  if ($1 eq 'get_') {
-    my $cat = $2;
-    my $class = $s->{_processor_map}{$cat};
-    my $obj = $class->new($s->{_files}{all},
-              \($s->{selected}),
-              $s->{_files}{"${cat}_files"}{_files});
-    return $obj;
-  }
-
-  croak "No such method: $AUTOLOAD";
+  # must be a "get" method
+  my $cat   = $2;
+  my $class = $s->{_processor_map}{$cat};
+  my $obj   = $class->new($s->{_files}{all},
+            \($s->{selected}),
+            $s->{_files}{"${cat}_files"}{_files});
+  return $obj;
 }
 
 sub new {
@@ -147,7 +144,7 @@ sub _classify {
 
 sub _add_obj {
   my ($s, $type, $obj) = @_;
-  $s->_scroak("Missing args to 'add_obj' method. Aborting.") if (!$type || !$obj);
+  $s->_scroak("Missing args to 'add_obj' method. Aborting.") if (!$obj);
 
   $s->{_files}{all}{$s->selected}{"${type}_obj"} = $obj;
 }
@@ -157,8 +154,8 @@ sub _add_obj {
 sub get_obj_prop {
   my ($s, $obj, $prop) = @_;
 
-  if (!$prop || !$obj) {
-    _scroak ("Missing arguments to get_obj_prop method");
+  if (!$prop) {
+    $s->_scroak ("Missing arguments to get_obj_prop method");
   }
 
   my $file         = ref ($s->selected) eq 'HASH'
@@ -196,7 +193,7 @@ sub get_obj {
 sub set_obj_prop {
   my ($s, $obj, $prop, $val)  = @_;
 
-  if (!$prop || !$obj) {
+  if (!$val) {
     $s->_scroak ("Missing arguments to set_obj_prop method");
   }
 
@@ -228,8 +225,8 @@ sub obj_meth {
              ? $s->selected->{full_path}
              : $s->selected;
 
-  if (!$obj || !$meth) {
-    _scroak ("Missing arguments to obj_meth method");
+  if (!$meth) {
+    $s->_scroak ("Missing arguments to obj_meth method");
   }
 
   my $o            = $obj . '_obj';
@@ -250,7 +247,7 @@ sub has_obj {
   my ($s, $type) = @_;
 
   if (!$type) {
-    _scroak ("Missing argument to has method");
+    $s->_scroak ("Missing argument to has method");
   }
 
   my $to   = "${type}_obj";
@@ -264,7 +261,12 @@ sub attr_defined {
   my $s = shift;
   my $obj = shift;
   my $attr = shift;
-  return defined $s->selected->{"${obj}_obj"}->{"_${attr}"};
+
+  if (ref $s->selected eq 'HASH') {
+    return exists $s->selected->{"${obj}_obj"}->{"_${attr}"};
+  } else {
+    return exists $s->{_files}{all}{$s->selected}{"${obj}_obj"}->{"_${attr}"};
+  }
 }
 
 sub print_short_name {
@@ -400,11 +402,13 @@ sub _get_args {
     if (!ref $arg) {
       push @resources, $arg;
     } elsif (ref($arg) eq 'HASH') {
-      croak ('Only one option hash allowed in constructor. Aborting.') if %$user_opts;
+      die ('Only one option hash allowed in constructor. Aborting.') if %$user_opts;
       $user_opts = $arg;
     } elsif (ref($arg) eq 'ARRAY') {
       die ('Only one class array allowed in constructor. Aborting.') if $classes;
       $classes = $arg;
+    } else {
+      die ('Unrecognized argument type passed to constructor');
     }
   }
   die('No list of resources passed to constructor. Aborting.') if ! @resources;

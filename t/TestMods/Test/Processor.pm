@@ -6,6 +6,7 @@ use parent 'File::Collector::Processor';
 
 sub print_blah_names {
   my $s = shift;
+  my $prop = $s->get_obj_prop('test', 'prop');
   print $s->selected->{short_path} . "\n\n";
 }
 

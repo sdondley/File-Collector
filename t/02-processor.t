@@ -14,23 +14,32 @@ $t0 = Benchmark->new;
 
 
 
-my $tests = 8; # keep on line 17 for ,i (increment and ,ii (decrement)
+my $tests = 19; # keep on line 17 for ,i (increment and ,ii (decrement)
 plan tests => $tests;
 
 # 1 - 8
 {
   my $da;
 
- lives_ok { $da = File::Collector->new('t/test_data/many_files', ['Test::Classifier']); }
+ throws_ok { $da = File::Collector->new('t/test_data/many_files', ['Test::Classifier'], {recurse => 1}, {recurse => 0}); } qr/Only one/,
+   'does not allow two hashes to be passed in constructor';
+
+ throws_ok { $da = File::Collector->new('t/test_data/many_files', ['Test::Classifier'], []); } qr/Only one class array/,
+   'does not allow two array refs to be passed in constructor';
+
+ throws_ok { $da = File::Collector->new('t/test_data/many_files', \$da); } qr/Unrecognized argument/,
+   'dies with unrecognized reference type passed to constructor';
+
+ lives_ok { $da = File::Collector->new('t/test_data/many_files', 't/test_data/single_file/a_file.txt', ['Test::Classifier']); }
    'creates Test Classifier object';
 
- stdout_like { $da->some_files->do->print_blah_names } qr/^dir1\/file4$/ms,
+ stdout_like { $da->some_files->do->print_blah_names } qr/^many_files\/dir1\/file6/ms,
    'prints first file';
 
- stdout_like { $da->some_files->do->print_short_name } qr/^dir2\/file\d\n[^\n]/ms,
+ stdout_like { $da->some_files->do->print_short_name } qr/^many_files\/dir2\/file\d\n[^\n]/ms,
    'prints first file with no double line break';
 
- stdout_like { while ($da->next_some_file) { $da->print_short_name; } } qr/^file2$/ms,
+ stdout_like { while ($da->next_some_file) { $da->print_short_name; } } qr/^many_files\/dir1\/file5$/ms,
    'next_ method works';
 
  my $file = $da->get_file(cwd() . '/t/test_data/many_files/file1');
@@ -44,7 +53,32 @@ plan tests => $tests;
     while ($da->next_some_file) {
       $da->print_short_name;
     }
-  } qr/file\d\nfile\d/, 'prints out short file names';
+  } qr/file\d\nmany_files\/file\d/, 'prints out short file names';
+
+  my $blah = $da->next_some_file;
+  is ($da->isa_some_file, 1,
+    'isa_ method returns correct value');
+
+  throws_ok { $da->get_obj_prop('test') } qr/Missing arguments/,
+    'throws error when missing arguments to get_obj_prop';
+
+  throws_ok { $da->has_obj() } qr/Missing argument/,
+    'throws error when missing arguments to has_obj';
+
+  is (!$da->isa_other_file, 1,
+    'isa_ method returns correct value');
+
+  throws_ok { $da->blah_file } qr/No such/,
+    'error when bad autoload method called';
+
+  lives_ok { $da->get_some_files }
+    'can get files';
+
+  throws_ok { $da->snigget } qr/No such/,
+    'error when bad autoload method called';
+
+  throws_ok { $da->get_file } qr/No file argument/,
+    'error when no argument passed to get_file';
 
   stdout_like {
     my $it1 = $da->get_some_files;
@@ -56,7 +90,8 @@ plan tests => $tests;
         $it2->print_blah_names;
       }
     }
-  } qr/file\d\n\ndir/, 'prints double spaced file listing';
+  } qr/file\d\n\nmany_files/, 'prints double spaced file listing';
+
 }
 
 my $t1 = Benchmark->new;

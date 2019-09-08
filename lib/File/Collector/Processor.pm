@@ -26,7 +26,7 @@ sub next {
 sub _isa {
   my $s    = shift;
   my $file = shift;
-  defined $s->{_files}{$file};
+  return exists $s->{_files}{$file};
 }
 
 sub _add_file {
@@ -49,7 +49,6 @@ sub do {
     $$self->$method(@_) while ($$self->next);
   }
 
-  sub DESTROY {}
 }
 
 1; # Magic true value
@@ -101,7 +100,7 @@ L<File::Collector> class which should C<use> your custom C<Processor> class.
 All methods described will be available to your C<Collector> class as well as
 the C<Processor> class.
 
-=method do()
+=regmethod do()
 
   $collector->some_files->do->run_method;
 
@@ -127,7 +126,7 @@ might look somethink like this:
 Note that we use C<$s-E<gt>selected> to refer to the file currently selected by
 the C<Processor>'s iterator. See L<File::Collector::Base> for more details.
 
-=method next()
+=regmethod next()
 
 Initiates a C<Processor> class' iterator on the first call. Iterates over the
 files in the C<Processor> on subsequent calls. Returns a boolean false when the
