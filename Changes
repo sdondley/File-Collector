@@ -1,6 +1,6 @@
-Revision history for {{$dist->name}}
+Revision history for File-Collector
 
-{{$NEXT}}
+0.030     2019-09-07 22:48:17-04:00 America/New_York
 
 0.029     2019-09-07 20:47:35-04:00 America/New_York
   - improve test coverage
