@@ -4,11 +4,11 @@ File::Collector - Base class for custom File::Collector classes for classifying 
 
 # VERSION
 
-version 0.031
+version 0.032
 
 # OVERVIEW
 
-`File::Collector` and its companion module `File::Collector::Processor` are
+`File::Collector` and its companion module [File::Collector::Processor](https://metacpan.org/pod/File::Collector::Processor) are
 base classes designed to make it easier to create custom modules for classifying
 and processing a collection of files as well as generating and processing data
 related to files in the collection.
@@ -26,7 +26,7 @@ process and import your files in stages. Each script produces output suitable
 for the next one. But running separate scripts for each processing stage can
 be slow, tedious, error-prone and a headache to maintain and organize.
 
-The `File::Collector` and `File::Collector::Processor` base modules make it
+The `File::Collector` and [File::Collector::Processor](https://metacpan.org/pod/File::Collector::Processor) base modules make it
 trivial to chain file processing modules into one logical package to make
 complicated file processing more robust, testable, and simpler to code.
 
@@ -153,10 +153,10 @@ option hash, which is optional.
 
     my $collector = File::Collector::YourClassifier->new(
       # The first arguments are a list of resources to be added
-      'my/dir', 'a_file.txt'
+      'my/dir', 'a_file.txt',
 
-      # The second argument is an array of Collector class names listed in the
-      # same order you want them to run
+      # The next argument is an array of Collector class names listed in the same
+      # order you want them to run
       [ 'File::Collector::First', 'File::Collector::YourCollector'],
 
       # Finally, an optional hash argument for options can be supplied
@@ -197,7 +197,7 @@ The methods can be run on `Collector` objects after they've been constructed.
 Creates a `Collector` object that collects files from the directories and files
 in the argument list. Once collected, the files are processed by each of the
 `@custom_collector_classes` in the order supplied by the array argument. An
-option hash can be supplied to turn directory recursion off with by setting
+option hash can be supplied to turn directory recursion off by setting
 `recurse` to false.
 
 `new` returns an object which contains all the files, their processing classes,
@@ -307,7 +307,7 @@ for each file in the collection.
       # Processor method calls go here
     }
 
-In this method, you should place various calls to `Processor`s methods.
+In this method, you should place various calls to `Processor` methods.
 
 ### \_classify( $category\_name )
 
