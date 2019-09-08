@@ -1,6 +1,9 @@
-Revision history for File-Collector
+Revision history for {{$dist->name}}
+
+{{$NEXT}}
 
 0.028     2019-09-07 20:14:10-04:00 America/New_York
+  - Get min. perl version working for real this time
 
 0.027     2019-09-07 19:45:17-04:00 America/New_York
   - remove crufty files from distro
