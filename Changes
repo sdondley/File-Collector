@@ -1,6 +1,6 @@
-Revision history for {{$dist->name}}
+Revision history for File-Collector
 
-{{$NEXT}}
+0.028     2019-09-07 20:14:10-04:00 America/New_York
 
 0.027     2019-09-07 19:45:17-04:00 America/New_York
   - remove crufty files from distro
