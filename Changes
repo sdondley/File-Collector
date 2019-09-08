@@ -1,6 +1,6 @@
-Revision history for {{$dist->name}}
+Revision history for File-Collector
 
-{{$NEXT}}
+0.033     2019-09-08 12:27:04-04:00 America/New_York
   - fix regex bug with interpolated variable
 
 0.032     2019-09-08 02:57:31-04:00 America/New_York
