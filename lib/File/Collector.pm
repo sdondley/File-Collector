@@ -421,7 +421,7 @@ __END__
 
 =head1 OVERVIEW
 
-C<File::Collector> and its companion module C<File::Collector::Processor> are
+C<File::Collector> and its companion module L<File::Collector::Processor> are
 base classes designed to make it easier to create custom modules for classifying
 and processing a collection of files as well as generating and processing data
 related to files in the collection.
@@ -439,7 +439,7 @@ process and import your files in stages. Each script produces output suitable
 for the next one. But running separate scripts for each processing stage can
 be slow, tedious, error-prone and a headache to maintain and organize.
 
-The C<File::Collector> and C<File::Collector::Processor> base modules make it
+The C<File::Collector> and L<File::Collector::Processor> base modules make it
 trivial to chain file processing modules into one logical package to make
 complicated file processing more robust, testable, and simpler to code.
 
@@ -566,10 +566,10 @@ option hash, which is optional.
 
    my $collector = File::Collector::YourClassifier->new(
      # The first arguments are a list of resources to be added
-     'my/dir', 'a_file.txt'
+     'my/dir', 'a_file.txt',
 
-     # The second argument is an array of Collector class names listed in the
-     # same order you want them to run
+     # The next argument is an array of Collector class names listed in the same
+     # order you want them to run
      [ 'File::Collector::First', 'File::Collector::YourCollector'],
 
      # Finally, an optional hash argument for options can be supplied
@@ -606,7 +606,7 @@ option hash, which is optional.
 Creates a C<Collector> object that collects files from the directories and files
 in the argument list. Once collected, the files are processed by each of the
 C<@custom_collector_classes> in the order supplied by the array argument. An
-option hash can be supplied to turn directory recursion off with by setting
+option hash can be supplied to turn directory recursion off by setting
 C<recurse> to false.
 
 C<new> returns an object which contains all the files, their processing classes,
@@ -707,7 +707,7 @@ for each file in the collection.
     # Processor method calls go here
   }
 
-In this method, you should place various calls to C<Processor>s methods.
+In this method, you should place various calls to C<Processor> methods.
 
 =primethod _classify( $category_name )
 

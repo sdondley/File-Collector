@@ -1,4 +1,7 @@
-Revision history for File-Collector
+Revision history for {{$dist->name}}
+
+{{$NEXT}}
+  - minor doc improvements
 
 0.031     2019-09-08 02:25:27-04:00 America/New_York
   - try to get tests passed on more platforms

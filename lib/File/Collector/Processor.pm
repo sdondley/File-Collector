@@ -70,6 +70,8 @@ classes for you automatically.
 
 =head1 SYNOPSIS
 
+  # package name must be the same as the custom Collector class with
+  # "::Processor" tacked on to the end
   package File::Collector::CustomClassifier::Processor
 
   use parent 'File::Collector::Processor';
@@ -99,6 +101,9 @@ Methods in the C<Processor> classes are typically called from a custom
 L<File::Collector> class which should C<use> your custom C<Processor> class.
 All methods described will be available to your C<Collector> class as well as
 the C<Processor> class.
+
+B<IMPORTANT:> The name of your C<Processor> class must be the same as your
+C<Collector> class but with C<::Processor> tacked on to the end.
 
 =regmethod do()
 
