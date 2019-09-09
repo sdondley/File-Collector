@@ -1,6 +1,6 @@
-Revision history for {{$dist->name}}
+Revision history for File-Collector
 
-{{$NEXT}}
+0.036     2019-09-09 09:58:38-04:00 America/New_York
   - Fix broken tests on Windows
 
 0.035     2019-09-08 15:18:35-04:00 America/New_York
