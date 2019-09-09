@@ -1,4 +1,7 @@
-Revision history for File-Collector
+Revision history for {{$dist->name}}
+
+{{$NEXT}}
+  - Fix broken tests on Windows
 
 0.035     2019-09-08 15:18:35-04:00 America/New_York
   - get failed tests working in windows
