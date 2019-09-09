@@ -1,5 +1,6 @@
 #/usr/bin/env perl
 use Cwd;
+use File::Spec;
 use Test::Most;
 use Test::Output;
 use File::Collector;
@@ -36,13 +37,13 @@ plan tests => $tests;
  stdout_like { $da->some_files->do->print_blah_names } qr/^many_files[\/\\]dir\d[\/\\]file\d/ms,
    'prints first file';
 
- stdout_like { $da->some_files->do->print_short_name } qr/^many_files\/dir\d[\/\\]file\d\n[^\n]/ms,
+ stdout_like { $da->some_files->do->print_short_name } qr/^many_files[\/\\]dir\d[\/\\]file\d\n[^\n]/ms,
    'prints first file with no double line break';
 
  stdout_like { while ($da->next_some_file) { $da->print_short_name; } } qr/^many_files[\/\\]dir\d[\/\\]file\d$/ms,
    'next_ method works';
 
- my $file = $da->get_file(cwd() . '/t/test_data/many_files/file1');
+ my $file = $da->get_file(File::Spec->catdir(cwd(), '/t/test_data/many_files/file1'));
  is ref ($file), 'HASH',
    'gets hash of file data';
 
@@ -53,7 +54,7 @@ plan tests => $tests;
     while ($da->next_some_file) {
       $da->print_short_name;
     }
-  } qr/file\d\nmany_files\/file\d/, 'prints out short file names';
+  } qr/file\d\nmany_files[\/\\]file\d/, 'prints out short file names';
 
   my $blah = $da->next_some_file;
   is ($da->isa_some_file, 1,
