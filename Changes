@@ -1,4 +1,7 @@
-Revision history for File-Collector
+Revision history for {{$dist->name}}
+
+{{$NEXT}}
+  - kill Windows test bugs for good (hopefully)
 
 0.036     2019-09-09 09:58:38-04:00 America/New_York
   - Fix broken tests on Windows
