@@ -47,7 +47,7 @@ plan tests => $tests;
  is ref ($file), 'HASH',
    'gets hash of file data';
 
- stdout_like { $da->list_files_long; } qr/file\d\n[\/[A-Z]][\w:]/,
+ stdout_like { $da->list_files_long; } qr/file\d\n[\/A-Z][\w:]/,
    'prints out long file paths';
 
   stdout_like {
