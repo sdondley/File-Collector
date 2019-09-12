@@ -387,7 +387,7 @@ sub _classify_all {
   my $s = shift;
   foreach my $c ( @{ $s->{_classes} } ) {
     my $role = Role::Tiny->apply_roles_to_object ($s, $c);
-    $role->_classify_file() if $role->can('_classify_file');;
+    $role->_classify_file() if $role->can('_classify_file');
   }
 }
 
