@@ -57,6 +57,7 @@ sub new {
   # eval class code
   foreach my $class ( @$classes ) {
     eval "require $class";
+    die "Could not load class: $class, $@" if $@;
   }
 
   # a bit of trickery to make Processor class code consistent with base class
