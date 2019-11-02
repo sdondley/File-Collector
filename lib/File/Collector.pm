@@ -675,7 +675,7 @@ C<_init_processors> method.
 
   my $processor = $collector->good_files;
 
-Returns the C<File::Processor> object for the category indicated by C<FILE_CATEGROY>.
+Returns the C<File::Processor> object for the category indicated by C<FILE_CATEGORY>.
 
 =regmethod get_FILE_CATEGORY_files()
 
